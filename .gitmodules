@@ -1,0 +1,4 @@
+[submodule "deps/meshroom"]
+	path = deps/meshroom
+	url = git@github.com:orphefs/meshroom.git
+	branch = master
