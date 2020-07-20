@@ -1,4 +1,4 @@
-from src.log_parser import ReconstructionStep
+from src.log_parsing.log_parser import ReconstructionStep
 
 
 class CameraInit(ReconstructionStep):

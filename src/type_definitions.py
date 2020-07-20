@@ -1,0 +1,1 @@
+MilliSeconds = int
