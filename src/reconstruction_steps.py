@@ -50,6 +50,7 @@ class Texturing(ReconstructionStep):
 
 
 if __name__ == '__main__':
+    #TODO: make log parsing automatic for all folders on regular intervals, to send POST requests to context broker
     ci = CameraInit(
         path_to_cache_dir="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/test/box_reconstruction/cache")
     print(ci.__class__.__name__)
