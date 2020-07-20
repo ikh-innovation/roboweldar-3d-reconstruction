@@ -130,6 +130,7 @@ dmypy.json
 
 # other dependencies
 deps/
+test/box_reconstruction/cache/
 
 # PyCharm
 .idea
