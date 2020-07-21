@@ -74,10 +74,20 @@ def log_parsing(shared_data: SharedData):
 def rest(shared_data: SharedData):
     # this thread will do the request posting to Orion
     logging.debug("Starting REST service...")
-    if shared_data.logs:
-        for step in shared_data.logs:
-            logger.info("Sending mock POST request with data: {}".format(step))
+    while True:
+        try:
+            if shared_data.logs:
+                for step in shared_data.logs:
+                    logger.info("Sending mock POST request with data: {}".format(step))
+                    # TODO: Need to create a REST service that sends updates to the Context Broker
             time.sleep(5)
+        # except FileNotFoundError as err:
+        #     logger.error(msg=err)
+        #     continue
+        except Exception as err:
+            logger.error(msg=err)
+            break
+
     logging.debug("Exiting REST service...")
 
 
@@ -87,7 +97,6 @@ if __name__ == '__main__':
     rec = threading.Thread(name='non-daemon', target=reconstruction)
     rest = threading.Thread(name='daemon', target=rest, args=(shared_data,))
     logparser = threading.Thread(name='daemon', target=log_parsing, args=(shared_data,))
-    rest.setDaemon(True)
 
     rec.start()
     logparser.start()

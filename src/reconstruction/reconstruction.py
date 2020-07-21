@@ -67,6 +67,7 @@ class ThreeDReconstruction:
                             "--output", self.path_to_output_dir,
                             "--cache", self.path_to_cache_dir,
                             "--forceStatus"])
+        # TODO: Need to check whether this command spawns other processes that need to be killed in case of exception
 
         process = subprocess.Popen(command,
                                    env=self._myenv,
