@@ -4,7 +4,17 @@ import glob
 from typing import List
 import logging
 
+from src.logging_config import ColorFormatter
+
+formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# this handler will write to sys.stderr by default
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+# adding handler to our logger
 logger = logging.getLogger("3d-reconstruction-service.reconstruction")
+logger.addHandler(handler)
+
+
 
 from config import ROOT_DIR
 

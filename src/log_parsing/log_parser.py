@@ -12,17 +12,13 @@ from config import ROOT_DIR
 from src.logging_config import ColorFormatter
 
 formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
 # this handler will write to sys.stderr by default
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
-
 # adding handler to our logger
 logger = logging.getLogger("3d-reconstruction-service.log_parser")
 logger.addHandler(handler)
-logger.error("This is an error!")
-logger.warning("This is a warning!")
+
 
 class LogParser:
     def __init__(self, path_to_cache_dir: str):

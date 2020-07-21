@@ -9,25 +9,16 @@ import coloredlogs
 from config import ROOT_DIR
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
+from src.logging_config import ColorFormatter
 from src.reconstruction.reconstruction import reconstruct, ThreeDReconstruction
 
-# create logger with 'spam_application'
+formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
 logger = logging.getLogger("3d-reconstruction-service")
-coloredlogs.install(level='DEBUG', logger=logger)
-logger.setLevel(logging.DEBUG)
-# create file handler which logs even debug messages
-fh = logging.FileHandler('3D-reconstruction-scheduler.log')
-fh.setLevel(logging.DEBUG)
-# create console handler with a higher log level
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
-logger.addHandler(ch)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
 
 
 class SharedData:
