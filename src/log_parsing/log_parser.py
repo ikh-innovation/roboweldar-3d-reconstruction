@@ -28,7 +28,12 @@ class LogParser:
     def parse(path_to_cache_dir: str, step_id: str) -> Dict:
         path_to_status = glob.glob(os.path.join(path_to_cache_dir, step_id, "**", "*status*"), recursive=True)
         if isinstance(path_to_status, list):
-            latest_file = max(path_to_status, key=os.path.getctime)
+            if len(path_to_status) == 0:
+                raise FileNotFoundError(
+                    "No status file found for ReconstructionStep {}. Are you sure the process has reached that step?".format(
+                        step_id))
+            else:
+                latest_file = max(path_to_status, key=os.path.getctime)
         else:
             latest_file = path_to_status[0]
 

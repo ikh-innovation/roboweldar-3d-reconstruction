@@ -20,7 +20,6 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 
-
 class SharedData:
     def __init__(self, logs: Optional[List[ReconstructionStep]]):
         self._logs = logs
@@ -62,6 +61,9 @@ def log_parsing(shared_data: SharedData):
             shared_data.logs = batch_parse_logs(path_to_cache_dir="/home/orfeas/Documents/Code/roboweldar/" \
                                                                   "roboweldar-3d-reconstruction/test/box_reconstruction/cache")
             time.sleep(5)
+        except FileNotFoundError as err:
+            logger.error(msg=err)
+            continue
         except Exception as err:
             logger.error(msg=err)
             break

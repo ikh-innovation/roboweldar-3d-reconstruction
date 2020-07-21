@@ -12,7 +12,8 @@ LOG_COLORS = {
 MODULE_COLORS = {
     "3d-reconstruction-service.reconstruction": colorama.Fore.GREEN,
     "3d-reconstruction-service": colorama.Fore.BLUE,
-    "3d-reconstruction-service.log_parser": colorama.Fore.WHITE
+    "3d-reconstruction-service.log_parser": colorama.Fore.WHITE,
+    "3d-reconstruction-service.scheduler": colorama.Fore.LIGHTYELLOW_EX
 }
 
 
