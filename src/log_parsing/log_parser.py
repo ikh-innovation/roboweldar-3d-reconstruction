@@ -1,3 +1,4 @@
+import inspect
 import os
 import glob
 import simplejson as json
@@ -70,6 +71,16 @@ class ReconstructionStep:
     @property
     def datetime_elapsed(self) -> dt.timedelta:
         return self._datetime_elapsed
+
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        members = ", ".join(["{} = {}".format(property_name, getattr(self, property_name))
+                             for (property_name, property_value) in
+                             inspect.getmembers(self.__class__, lambda x: isinstance(x, property))])
+        # alternative implementation to get property names
+        # property_names = [p for p in dir(self.__class__) if isinstance(getattr(self.__class__, p), property)]
+
+        return "{}({})".format(class_name, members)
 
 
 if __name__ == '__main__':
