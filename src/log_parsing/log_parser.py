@@ -5,7 +5,12 @@ import simplejson as json
 from typing import Dict
 import datetime as dt
 
+import logging
+
 from config import ROOT_DIR
+
+# create logger
+logger = logging.getLogger('3D-reconstruction-scheduler')
 
 
 class LogParser:
@@ -20,11 +25,14 @@ class LogParser:
         else:
             latest_file = path_to_status[0]
 
+        logger.info("Found status file: {}".format(latest_file))
+
         if os.path.isfile(latest_file):
             with open(latest_file, "r") as infile:
                 data = infile.readlines()
                 data = "".join(data)
                 jsonified = json.loads(data)
+                logger.info("Jsonified file contents: {}".format(jsonified))
                 return jsonified
 
 
@@ -46,11 +54,12 @@ class ReconstructionStep:
                                step_id=self._step_id)
 
     def _populate_attributes(self):
-        self._datetime_start = dt.datetime.strptime(self._parsed_log["startDateTime"], '%Y-%m-%d %H:%M:%S.%f')
-        self._datetime_end = dt.datetime.strptime(self._parsed_log["endDateTime"], '%Y-%m-%d %H:%M:%S.%f')
-        self._datetime_elapsed = dt.datetime.strptime(self._parsed_log["elapsedTimeStr"], "%H:%M:%S.%f") - dt.datetime(
-            1900, 1, 1)
         self._status = self._parsed_log["status"]
+        if self.status == "SUCCESS":
+            self._datetime_start = dt.datetime.strptime(self._parsed_log["startDateTime"], '%Y-%m-%d %H:%M:%S.%f')
+            self._datetime_end = dt.datetime.strptime(self._parsed_log["endDateTime"], '%Y-%m-%d %H:%M:%S.%f')
+            self._datetime_elapsed = dt.datetime.strptime(self._parsed_log["elapsedTimeStr"], "%H:%M:%S.%f") - dt.datetime(
+            1900, 1, 1)
 
     @property
     def path_to_cache_dir(self):
