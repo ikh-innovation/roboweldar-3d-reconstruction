@@ -9,9 +9,20 @@ import logging
 
 from config import ROOT_DIR
 
-# create logger
-logger = logging.getLogger('3D-reconstruction-scheduler')
+from src.logging_config import ColorFormatter
 
+formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+# this handler will write to sys.stderr by default
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+
+# adding handler to our logger
+logger = logging.getLogger("3d-reconstruction-service.log_parser")
+logger.addHandler(handler)
+logger.error("This is an error!")
+logger.warning("This is a warning!")
 
 class LogParser:
     def __init__(self, path_to_cache_dir: str):
@@ -58,8 +69,9 @@ class ReconstructionStep:
         if self.status == "SUCCESS":
             self._datetime_start = dt.datetime.strptime(self._parsed_log["startDateTime"], '%Y-%m-%d %H:%M:%S.%f')
             self._datetime_end = dt.datetime.strptime(self._parsed_log["endDateTime"], '%Y-%m-%d %H:%M:%S.%f')
-            self._datetime_elapsed = dt.datetime.strptime(self._parsed_log["elapsedTimeStr"], "%H:%M:%S.%f") - dt.datetime(
-            1900, 1, 1)
+            self._datetime_elapsed = dt.datetime.strptime(self._parsed_log["elapsedTimeStr"],
+                                                          "%H:%M:%S.%f") - dt.datetime(
+                1900, 1, 1)
 
     @property
     def path_to_cache_dir(self):

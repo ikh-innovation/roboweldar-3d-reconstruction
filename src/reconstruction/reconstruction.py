@@ -4,7 +4,7 @@ import glob
 from typing import List
 import logging
 
-logger = logging.getLogger("RoboWeldAR-3D-Reconstruction")
+logger = logging.getLogger("3d-reconstruction-service.reconstruction")
 
 from config import ROOT_DIR
 
@@ -52,15 +52,31 @@ class ThreeDReconstruction:
         return self._path_to_cache_dir
 
     def start(self):
-        try:
-            subprocess.check_call([self._path_to_meshroom_photogrammetry_bin,
-                                   "--input", self.path_to_images_dir,
-                                   "--output", self.path_to_output_dir,
-                                   "--cache", self.path_to_cache_dir,
-                                   "--forceStatus"],
-                                  env=self._myenv)
-        except OSError:
-            self.stop()
+        command = " ".join([self._path_to_meshroom_photogrammetry_bin,
+                            "--input", self.path_to_images_dir,
+                            "--output", self.path_to_output_dir,
+                            "--cache", self.path_to_cache_dir,
+                            "--forceStatus"])
+
+        process = subprocess.Popen(command,
+                                   env=self._myenv,
+                                   shell=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE
+                                   )
+
+        output = ""
+        for line in iter(process.stdout.readline, ""):
+            logger.info(line)
+            output += line
+
+        process.wait()
+        exit_code = process.returncode
+
+        if exit_code == 0:
+            return output
+        else:
+            raise Exception(command, exit_code, output)
 
     @staticmethod
     def stop():

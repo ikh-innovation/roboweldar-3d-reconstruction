@@ -5,6 +5,8 @@ from typing import List, Tuple
 from src.log_parsing.log_parser import ReconstructionStep
 
 
+# This module contains only reconstruction steps
+
 class CameraInit(ReconstructionStep):
     pass
 
