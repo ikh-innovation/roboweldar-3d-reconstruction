@@ -79,7 +79,7 @@ class ThreeDReconstruction:
         output = ""
         for line in iter(process.stdout.readline, ""):
             logger.info(line)
-            output += line
+            output += str(line)
 
         process.wait()
         exit_code = process.returncode

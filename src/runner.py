@@ -47,7 +47,7 @@ def reconstruction():
     try:
         output = threedreconstruction.start()
     except Exception as err:
-        logger.error(err)
+        logger.error(err, exc_info=1)
 
     logger.debug("Exiting Meshroom...")
     return output
