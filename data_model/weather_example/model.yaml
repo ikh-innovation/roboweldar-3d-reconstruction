@@ -1,0 +1,125 @@
+---
+# Copyright (c) 2020 Contributors to Smart-Data-Models
+# see https://github.com/smart-data-models/dataModel.Weather
+
+WeatherForecast:
+  required:
+    - id
+    - type
+    - dateIssued
+    - address
+  allOf:
+    - $ref: 'https://smart-data-models.github.io/data-models/ngsi-ld.yaml#/Common'
+    - $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherCommons'
+  type: object
+  description: |
+    This entity contains a harmonised description of a Weather Forecast. This entity
+    is primarily associated with the vertical segments of the environment and
+    agriculture but is applicable to many different applications.
+
+    This data model has been developed in cooperation with mobile operators and the
+    [GSMA](https://www.gsma.com/iot/iot-big-data/).
+
+    You can see a description of weather forecast parameters provided by AEMET (in
+    Spanish) [here](http://www.aemet.es/es/eltiempo/prediccion/municipios/ayuda).
+  properties:
+    address:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/schema.org.yaml#/address
+    alternateName:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/schema.org.yaml#/alternateName
+    areaServed:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/schema.org.yaml#/areaServed
+    dataProvider:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/fiware-terms.yaml#/dataProvider
+    dateIssued:
+      x-ngsi:
+        type: Property
+        model: 'https://schema.org/DateTime'
+      type: string
+      description: 'The date and time the forecast was issued by the meteorological bureau in ISO8601 UTC format.'
+      format: date-time
+    dateRetrieved:
+      x-ngsi:
+        type: Property
+        model: 'https://schema.org/DateTime'
+      type: string
+      description: 'The date and time the forecast was retrieved in ISO8601 UTC format.'
+      format: date-time
+    dayMaximum:
+      x-ngsi:
+        type: Property
+      type: object
+      description: 'Maximum values for the reported period.'
+      properties:
+        feelsLikeTemperature:
+          $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherAirConditions/properties/feelsLikeTemperature'
+        relativeHumidity:
+          $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherAirConditions/properties/relativeHumidity'
+        temperature:
+          $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherAirConditions/properties/temperature'
+
+    dayMinimum:
+      x-ngsi:
+        type: Property
+      type: object
+      description: 'Minimum values forecasted for the reported period'
+      properties:
+        feelsLikeTemperature:
+          $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherAirConditions/properties/feelsLikeTemperature'
+        relativeHumidity:
+          $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherAirConditions/properties/relativeHumidity'
+        temperature:
+          $ref: 'https://smart-data-models.github.io/dataModel.Weather/weather-model.yaml#/WeatherAirConditions/properties/temperature'
+
+    description:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/ngsi-ld.yaml#/description
+    location:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/ngsi-ld.yaml#/location
+    name:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/ngsi-ld.yaml#/name
+    owner:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/fiware-terms.yaml#/owner
+    precipitationProbability : 
+      description: The probability of precipitation, expressed as a number between 0 ≤ precipitationProbability ≤ 1.
+      type: number
+    source:
+      $ref: >-
+        https://smart-data-models.github.io/data-models/fiware-terms.yaml#/source
+    uVIndexMax:
+      x-ngsi:
+        type: Property
+      type: number
+      description: The maximum UV index for the period, based on the World Health Organization's UV Index measure.
+      externalDocs:
+        url: http://www.who.int/uv/intersunprogramme/activities/uv_index/en/
+    validFrom:
+      x-ngsi:
+        type: Property
+        model: 'https://schema.org/DateTime'
+      type: string
+      description: 'The start of the validity period for this forecast as a ISO8601 format'
+      format: date-time
+    validTo:
+      x-ngsi:
+        type: Property
+        model: 'https://schema.org/DateTime'
+      type: string
+      description: 'The end of the validity period for this forecast as a ISO8601 format'
+      format: date-time
+    validity:
+      x-ngsi:
+        type: Property
+        model: 'https://schema.org/Text'
+      type: string
+      description: |
+        Includes the validity period for this forecast as a ISO8601
+        time interval. As a workaround for the lack of support of Orion Context
+        Broker for datetime intervals, it can be used two separate attributes
