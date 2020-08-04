@@ -70,6 +70,27 @@ class ReconstructionThread(StoppingThread):
         while not self._stop_event.isSet() or process.returncode != 0:
             self._stop_event.wait(self._sleep_period)
 
+
+        #######################################
+        # Code for parsing STDOUT of process and logging it
+        #
+        # output = ""
+        # for line in iter(process.stdout.readline, ""):
+        #     logger.info(line)
+        #     output += str(line)
+        #
+        # process.wait()
+        # exit_code = process.returncode
+        #
+        # if exit_code == 0:
+        #     return output
+        # else:
+        #     raise Exception(command, exit_code, output)
+        #
+
+        ######################################
+
+
         # If execution gets here before 3dreconstruction is finished, it kills the process
         logger.info("I got here!!!!!")
         # TODO: the process is not entirely killed and this becomes a blocking call for some reason, so thread does not terminate
