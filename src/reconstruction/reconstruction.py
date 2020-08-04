@@ -69,7 +69,7 @@ class ThreeDReconstruction:
 
         process = subprocess.Popen(command,
                                    env=self._myenv,
-                                   shell=True,
+                                   # shell=True,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    preexec_fn=os.setsid,
@@ -77,23 +77,23 @@ class ThreeDReconstruction:
 
         return process
 
-    @staticmethod
-    def stop(pid):
-        try:
-            subprocess.call("kill {}".format(pid))
-            # TODO: add return statement?
-        except subprocess.CalledProcessError as err:
-            logger.error(
-                "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
-
     # @staticmethod
-    # def stop():
+    # def stop(pid):
     #     try:
-    #         subprocess.call("kill $(ps aux | grep '[m]eshroom' | awk '{print $2}')", shell=True)
+    #         subprocess.call("kill {}".format(pid))
     #         # TODO: add return statement?
     #     except subprocess.CalledProcessError as err:
     #         logger.error(
     #             "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
+
+    @staticmethod
+    def kill():
+        try:
+            subprocess.call("kill $(ps aux | grep '[m]eshroom' | awk '{print $2}')", shell=True)
+            # TODO: add return statement?
+        except subprocess.CalledProcessError as err:
+            logger.error(
+                "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
 
 
 def reconstruct():

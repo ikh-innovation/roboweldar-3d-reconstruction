@@ -54,6 +54,8 @@ class ReconstructionThread(StoppingThread):
     def run(self):
         logger.debug("Starting Meshroom reconstruction thread...")
 
+        # TODO: Provide links to images as arguments and download them to the "raw" dir prior to running further code
+
         threedreconstruction = ThreeDReconstruction(
             path_to_meshroom_root=os.path.join(ROOT_DIR, "deps", "Meshroom-2019.2.0"),
             path_to_images_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "raw"),
@@ -72,6 +74,7 @@ class ReconstructionThread(StoppingThread):
         logger.info("I got here!!!!!")
         # TODO: the process is not entirely killed and this becomes a blocking call for some reason, so thread does not terminate
         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        threedreconstruction.kill()
 
         logger.info("Exiting Meshroom reconstruction thread...")
 
@@ -132,6 +135,8 @@ logparser_thread = LogParserThread(name="log_parsing_thread", shared_data=shared
 
 @app.route("/start")
 def start():
+    # TODO:  JSON payload should contain downloadable links to images
+
     reconstruction_thread.start()
     logparser_thread.start()
     post_updates_thread.start()
