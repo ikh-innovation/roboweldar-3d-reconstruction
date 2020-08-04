@@ -71,7 +71,7 @@ def log_parsing(shared_data: SharedData):
     logger.info("Exiting Meshroom log parsing...")
 
 
-def rest(shared_data: SharedData):
+def post_updates(shared_data: SharedData):
     # this thread will do the request posting to Orion
     logging.debug("Starting REST service...")
     while True:
@@ -94,10 +94,12 @@ def rest(shared_data: SharedData):
 if __name__ == '__main__':
     shared_data = SharedData(None)
 
-    rec = threading.Thread(name='non-daemon', target=reconstruction)
-    rest = threading.Thread(name='daemon', target=rest, args=(shared_data,))
-    logparser = threading.Thread(name='daemon', target=log_parsing, args=(shared_data,))
+    reconstruction_thread = threading.Thread(name='non-daemon', target=reconstruction)
 
-    rec.start()
-    logparser.start()
-    rest.start()
+    # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
+    update_thread = threading.Thread(name='daemon', target=post_updates, args=(shared_data,))
+    logparser_thread = threading.Thread(name='daemon', target=log_parsing, args=(shared_data,))
+
+    reconstruction_thread.start()
+    logparser_thread.start()
+    update_thread.start()

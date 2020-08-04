@@ -14,8 +14,6 @@ handler.setFormatter(formatter)
 logger = logging.getLogger("3d-reconstruction-service.reconstruction")
 logger.addHandler(handler)
 
-
-
 from config import ROOT_DIR
 
 
@@ -73,29 +71,29 @@ class ThreeDReconstruction:
                                    env=self._myenv,
                                    shell=True,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE
+                                   stderr=subprocess.PIPE,
+                                   preexec_fn=os.setsid,
                                    )
 
-        output = ""
-        for line in iter(process.stdout.readline, ""):
-            logger.info(line)
-            output += str(line)
-
-        process.wait()
-        exit_code = process.returncode
-
-        if exit_code == 0:
-            return output
-        else:
-            raise Exception(command, exit_code, output)
+        return process
 
     @staticmethod
-    def stop():
+    def stop(pid):
         try:
-            subprocess.call("kill $(ps aux | grep '[m]eshroom' | awk '{print $2}')", shell=True)
+            subprocess.call("kill {}".format(pid))
+            # TODO: add return statement?
         except subprocess.CalledProcessError as err:
             logger.error(
                 "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
+
+    # @staticmethod
+    # def stop():
+    #     try:
+    #         subprocess.call("kill $(ps aux | grep '[m]eshroom' | awk '{print $2}')", shell=True)
+    #         # TODO: add return statement?
+    #     except subprocess.CalledProcessError as err:
+    #         logger.error(
+    #             "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
 
 
 def reconstruct():
