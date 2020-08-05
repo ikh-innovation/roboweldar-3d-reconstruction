@@ -106,7 +106,9 @@ class ReconstructionThread(StoppingThread):
 
         # If execution gets here before 3dreconstruction is finished, it kills the process
 
-        # TODO: This works but should not kill process like that as it might kill other sessions on the server
+        # TODO: This works but should not kill process like that as it might kill other sessions on the server,
+        #  unless dockerization is used for every client connection instance
+
         threedreconstruction.kill()
 
         logger.info("Exiting Meshroom reconstruction thread...")
@@ -195,7 +197,6 @@ def stop():
         return "Stopped 3D reconstruction..."
     else:
         return "No running instance of 3D reconstruction..."
-
 
 
 @app.route("/status")
