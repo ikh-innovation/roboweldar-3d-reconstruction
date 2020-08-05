@@ -106,15 +106,8 @@ class ReconstructionThread(StoppingThread):
 
         # If execution gets here before 3dreconstruction is finished, it kills the process
 
-        # TODO: using shell=true with subprocess is non-blocking in the python code,
-        #  but the spawned processes cannot be tracker and thus killed
-
-        print("1st kill")
-
-        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        # print("2nd kill")
-
-        # threedreconstruction.kill()
+        # TODO: This works but should not kill process like that as it might kill other sessions on the server
+        threedreconstruction.kill()
 
         logger.info("Exiting Meshroom reconstruction thread...")
 

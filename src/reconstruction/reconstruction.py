@@ -1,6 +1,8 @@
+import signal
 import subprocess
 import os
 import glob
+from time import sleep
 from typing import List
 import logging
 
@@ -38,6 +40,7 @@ class ThreeDReconstruction:
         self._setup_paths()
         self._myenv = None
         self._set_environment_variables()
+        self._process = None
 
     def _setup_paths(self):
         self._path_to_meshroom_photogrammetry_bin = os.path.join(self._path_to_meshroom_root, "meshroom_photogrammetry")
@@ -66,22 +69,20 @@ class ThreeDReconstruction:
         return self._path_to_cache_dir
 
     def start(self):
-        command = " ".join([self._path_to_meshroom_photogrammetry_bin,
-                            "--input", self.path_to_images_dir,
-                            "--output", self.path_to_output_dir,
-                            "--cache", self.path_to_cache_dir,
-                            "--forceStatus"])
+        command = [self._path_to_meshroom_photogrammetry_bin,
+                   "--input", self.path_to_images_dir,
+                   "--output", self.path_to_output_dir,
+                   "--cache", self.path_to_cache_dir,
+                   "--forceStatus"]
         # TODO: Need to check whether this command spawns other processes that need to be killed in case of exception
 
-        process = subprocess.Popen(command,
-                                   env=self._myenv,
-                                   # shell=True,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   # preexec_fn=os.setsid,
-                                   )
-
-        return process
+        self._process = subprocess.Popen(command,
+                                         env=self._myenv,
+                                         # shell=True,
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE,
+                                         # preexec_fn=os.setsid,
+                                         )
 
     # @staticmethod
     # def stop(pid):
@@ -92,8 +93,20 @@ class ThreeDReconstruction:
     #         logger.error(
     #             "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
 
+    def stop(self):
+        # os.killpg(os.getpgid(pid), signal.SIGTERM)
+        self._process.terminate()
+        self._process.kill()
+
     @staticmethod
     def kill():
+        try:
+            subprocess.call("kill $(ps aux | grep '[a]liceVision' | awk '{print $2}')", shell=True)
+            # TODO: add return statement?
+        except subprocess.CalledProcessError as err:
+            logger.error(
+                "Tried to kill process. Returned error code: {} with message {}".format(err.returncode, err.output))
+
         try:
             subprocess.call("kill $(ps aux | grep '[m]eshroom' | awk '{print $2}')", shell=True)
             # TODO: add return statement?
@@ -123,6 +136,14 @@ if __name__ == '__main__':
         path_to_cache_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "cache")
     )
 
+    threedreconstruction.start()
+    print(threedreconstruction._process.pid)
 
-    process = threedreconstruction.start()
-    process = threedreconstruction.kill()
+    sleep(6)
+
+    # This does not work because the process spawns children
+    threedreconstruction.stop()
+
+    # TODO: This works but should not kill process like that as it might kill other sessions on the server
+    threedreconstruction.kill()
+
