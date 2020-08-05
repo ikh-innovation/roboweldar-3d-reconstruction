@@ -6,18 +6,22 @@ from typing import List, Optional
 
 import coloredlogs
 
-from config import ROOT_DIR
+from config import ROOT_DIR, LOGGING_ENABLED
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
+from src.noop_logger import NoopLogger
 from src.reconstruction.reconstruction import reconstruct, ThreeDReconstruction
 
-formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-logger = logging.getLogger("3d-reconstruction-service")
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+if LOGGING_ENABLED:
+    formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger = logging.getLogger("3d-reconstruction-service")
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+else:
+    logger = NoopLogger()
 
 
 class SharedData:

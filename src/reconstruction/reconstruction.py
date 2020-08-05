@@ -4,17 +4,23 @@ import glob
 from typing import List
 import logging
 
+from config import ROOT_DIR, LOGGING_ENABLED
+
 from src.logging_config import ColorFormatter
+from src.noop_logger import NoopLogger
 
-formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# this handler will write to sys.stderr by default
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-# adding handler to our logger
-logger = logging.getLogger("3d-reconstruction-service.reconstruction")
-logger.addHandler(handler)
+if LOGGING_ENABLED:
+    formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # this handler will write to sys.stderr by default
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    # adding handler to our logger
+    logger = logging.getLogger("3d-reconstruction-service.reconstruction")
+    logger.addHandler(handler)
+else:
+    logger = NoopLogger()
 
-from config import ROOT_DIR
+from config import ROOT_DIR, LOGGING_ENABLED
 
 
 class ThreeDReconstruction:
@@ -72,7 +78,7 @@ class ThreeDReconstruction:
                                    # shell=True,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
-                                   preexec_fn=os.setsid,
+                                   # preexec_fn=os.setsid,
                                    )
 
         return process
@@ -110,4 +116,13 @@ def reconstruct():
 
 
 if __name__ == '__main__':
-    reconstruct()
+    threedreconstruction = ThreeDReconstruction(
+        path_to_meshroom_root=os.path.join(ROOT_DIR, "deps", "Meshroom-2019.2.0"),
+        path_to_images_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "raw"),
+        path_to_output_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "output"),
+        path_to_cache_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "cache")
+    )
+
+
+    process = threedreconstruction.start()
+    process = threedreconstruction.kill()

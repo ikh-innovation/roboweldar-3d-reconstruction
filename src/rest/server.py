@@ -16,12 +16,22 @@ from src.reconstruction.reconstruction import ThreeDReconstruction
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
 # logging
-formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
+
 logger = logging.getLogger("3d-reconstruction-service")
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('web_service.log')
+fh.setLevel(logging.DEBUG)
+# log errors to stdout
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+# create formatter and add it to the handlers
+formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+# add the handlers to logger
+logger.addHandler(ch)
+logger.addHandler(fh)
 
 # Flask
 app = Flask(__name__)
@@ -47,6 +57,7 @@ class StoppingThread(threading.Thread):
     def join(self, timeout=None):
         """ Stop the thread. """
         self._stop_event.set()
+        print("set stop event")
         threading.Thread.join(self, timeout)
 
 
@@ -65,10 +76,13 @@ class ReconstructionThread(StoppingThread):
         )
 
         # If process returns exit code 0, it has completed successfully
-        process = threedreconstruction.start()
+        logger.info("Before start!!!!!")
 
-        # Get stuck in this loop until stopevent flag is set
-        while not self._stop_event.isSet() or process.returncode != 0:
+        process = threedreconstruction.start()
+        logger.info("After start!!!!!")
+
+        # Get stuck in this loop until stopevent flag is set, otherwise reach end of execution and terminate thread
+        while not self._stop_event.isSet():
             self._stop_event.wait(self._sleep_period)
 
         #######################################
@@ -91,13 +105,16 @@ class ReconstructionThread(StoppingThread):
         ######################################
 
         # If execution gets here before 3dreconstruction is finished, it kills the process
-        logger.info("I got here!!!!!")
 
-        # TODO: the process is not entirely killed and this becomes a
-        #  blocking call for some reason, so thread does not terminate
+        # TODO: using shell=true with subprocess is non-blocking in the python code,
+        #  but the spawned processes cannot be tracker and thus killed
+
+        print("1st kill")
 
         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        threedreconstruction.kill()
+        # print("2nd kill")
+
+        # threedreconstruction.kill()
 
         logger.info("Exiting Meshroom reconstruction thread...")
 
@@ -148,7 +165,10 @@ class UpdatesThread(StoppingThread):
         logger.info("Stopping update thread...")
 
 
+# Shared data between threads
 shared_data = SharedData(None)
+# Share threads among routes
+threads = []
 
 reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
 # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
@@ -159,23 +179,36 @@ logparser_thread = LogParserThread(name="log_parsing_thread", shared_data=shared
 @app.route("/start")
 def start():
     # TODO:  JSON payload should contain downloadable links to images
-
+    reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
+    # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
+    post_updates_thread = UpdatesThread(name="post_updates_thread", shared_data=shared_data)
+    logparser_thread = LogParserThread(name="log_parsing_thread", shared_data=shared_data)
     reconstruction_thread.start()
+    threads.append(reconstruction_thread)
     logparser_thread.start()
+    threads.append(logparser_thread)
     post_updates_thread.start()
+    threads.append(post_updates_thread)
+
     return "Started 3D reconstruction..."
 
 
 @app.route("/stop")
 def stop():
-    post_updates_thread.join()
+    if len(threads) == 3:
+        threads[2].join()
+        threads[1].join()
+        threads[0].join()
+        return "Stopped 3D reconstruction..."
+    else:
+        return "No running instance of 3D reconstruction..."
 
-    logparser_thread.join()
-
-    reconstruction_thread.join()
-    return "Stopped 3D reconstruction..."
 
 
 @app.route("/status")
 def status():
     return "Stopped 3D reconstruction..."
+
+
+if __name__ == '__main__':
+    app.run()

@@ -7,17 +7,21 @@ import datetime as dt
 
 import logging
 
-from config import ROOT_DIR
+from config import ROOT_DIR, LOGGING_ENABLED
 
 from src.logging_config import ColorFormatter
+from src.noop_logger import NoopLogger
 
-formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# this handler will write to sys.stderr by default
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-# adding handler to our logger
-logger = logging.getLogger("3d-reconstruction-service.log_parser")
-logger.addHandler(handler)
+if LOGGING_ENABLED:
+    formatter = ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # this handler will write to sys.stderr by default
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    # adding handler to our logger
+    logger = logging.getLogger("3d-reconstruction-service.log_parser")
+    logger.addHandler(handler)
+else:
+    logger = NoopLogger()
 
 
 class LogParser:
