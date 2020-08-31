@@ -19,6 +19,7 @@ from src.logging_config import ColorFormatter
 from src.reconstruction.reconstruction import ThreeDReconstruction
 from src.rest import ws_client
 from src.rest.http_client import send_images, getImageNames
+from src.rest.template import getImages
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
 # logging
@@ -76,9 +77,9 @@ class ReconstructionThread(StoppingThread):
 
         threedreconstruction = ThreeDReconstruction(
             path_to_meshroom_root=os.path.join(ROOT_DIR, "deps", "Meshroom-2019.2.0"),
-            path_to_images_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "raw"),
-            path_to_output_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "output"),
-            path_to_cache_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "cache")
+            path_to_images_dir=os.path.join(ROOT_DIR, "test", "input", "raw"),
+            path_to_output_dir=os.path.join(ROOT_DIR, "test", "input", "output"),
+            path_to_cache_dir=os.path.join(ROOT_DIR, "test", "input", "cache")
         )
 
         # If process returns exit code 0, it has completed successfully
@@ -238,9 +239,7 @@ def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
 
 @app.route("/start")
 def start():
-
     getImages()
-
 
     reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
     # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
@@ -262,6 +261,8 @@ def stop():
         threads[2].join()
         threads[1].join()
         threads[0].join()
+
+        # TODO: Clean all files after module is stopped
         return "Stopped StructureFromMotion module..."
 
     else:
@@ -300,6 +301,9 @@ def wrap_send_images(route: str, output_files: List[str]) -> bool:
 
 
 def test_main(host, endpoint):
+    # TODO: Clean all files before module is started
+
+    getImages(host, path=os.path.join(ROOT_DIR, "test", "input", "raw"))
     wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
     wsClient.on_message = on_message
     wst = threading.Thread(target=wsClient.run_forever)

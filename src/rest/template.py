@@ -44,12 +44,12 @@ def sendDummyFiles(endpoint):
 def sendMesh(fName):
   http_client.uploadMesh("http://localhost:3000/cache_mesh", fName)
 
-def getImages(host):
+def getImages(host, path):
   images = http_client.getImageNames( "http://" + host + ":3000/" + 'image_names' )
   for image in images:
-    url = "http://" + host + ":3000/serve_image?name=" + image
+    url = "http://" + host + ":3000/serve_image?imageName=" + image
     content = http_client.downloadImage(url)
-    with open( str(image), 'wb') as f:
+    with open( os.path.join(path, str(image)), 'wb') as f:
       f.write( content )
 
 if __name__ == "__main__":
