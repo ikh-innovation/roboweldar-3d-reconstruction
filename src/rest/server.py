@@ -4,12 +4,14 @@ import os
 import signal
 import threading
 import time
-
+from typing import List
+import simplejson as json
 import pyfiware
 from threading import Event
 from flask import Flask
 
 from config import ROOT_DIR
+from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
 from src.reconstruction.reconstruction import ThreeDReconstruction
@@ -199,9 +201,78 @@ def stop():
         return "No running instance of 3D reconstruction..."
 
 
+def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
+    startedAt = min([step.datetime_start for step in reconstruction_steps if step.datetime_start])
+
+    if all([step.status == "SUCCESS" for step in reconstruction_steps]):
+        endedAt = max([step.datetime_end for step in reconstruction_steps])
+    else:
+        endedAt = None
+
+    percentageOverallProgress = sum([step.status == "SUCCESS" for step in reconstruction_steps]) / len(
+        reconstruction_steps)
+
+    d = {
+        "id": "3DReconstructionService-2016-11-30T07:00:00.00Z",
+        "type": "Computation",
+        "address": {
+            "addressLocality": "Athens",
+            "addressCountry": "GR"
+        },
+        "inputFiles": [
+            {
+                "id": "IMG_0001.JPG",
+                "url": "http://pjf0349ts.net/uploads/IMG_0001.JPG"
+            },
+            {
+                "id": "IMG_0002.JPG",
+                "url": "http://pjf0349ts.net/uploads/IMG_0002.JPG"
+            },
+            {
+                "id": "IMG_0003.JPG",
+                "url": "http://pjf0349ts.net/uploads/IMG_0003.JPG"
+            }
+        ],
+        "outputFiles": [
+            {
+                "id": "test.OBJ",
+                "url": "http://pjf0349ts.net/outputs/test.OBJ"
+            },
+            {
+                "id": "test.STL",
+                "url": "http://pjf0349ts.net/outputs/test.STL"
+            }
+        ],
+        "dataProvider": "iKnowHow SA",
+        "startedAt": startedAt,
+        "endedAt": endedAt,
+        "percentageOverallProgress": percentageOverallProgress,
+        "children": [],
+        "location": {
+            "type": "Point",
+            "coordinates": [
+                -4.754444444,
+                41.64833333
+            ]
+        }
+    }
+
+    for step in reconstruction_steps:
+        d["children"].append({step.__class__.__name__:
+
+                                  {s: getattr(step, s, None) for s in dir(step) if
+                                   isinstance(getattr(type(step), s, None), property)}
+
+                              })
+
+    return json.dumps(d, indent=4, sort_keys=True, default=str)
+
+
 @app.route("/status")
 def status():
-    return "Stopped 3D reconstruction..."
+    status = convert_to_ngsi_format(shared_data.logs)
+
+    return status
 
 
 if __name__ == '__main__':
