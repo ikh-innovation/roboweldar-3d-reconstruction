@@ -134,3 +134,8 @@ test/box_reconstruction/cache/
 
 # PyCharm
 .idea
+
+# output files
+.obj
+.mtl
+.png
