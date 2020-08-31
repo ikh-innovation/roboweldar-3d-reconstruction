@@ -213,7 +213,7 @@ def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
         reconstruction_steps)
 
     d = {
-        "id": "3DReconstructionService-2016-11-30T07:00:00.00Z",
+        "id": "StructureFromMotionService-{}".format(str(startedAt)),
         "type": "Computation",
         "address": {
             "addressLocality": "Athens",
