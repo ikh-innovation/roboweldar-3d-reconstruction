@@ -187,7 +187,7 @@ def start():
     post_updates_thread.start()
     threads.append(post_updates_thread)
 
-    return "Started 3D reconstruction..."
+    return "Started StructureFromMotion module..."
 
 
 @app.route("/stop")
@@ -196,9 +196,9 @@ def stop():
         threads[2].join()
         threads[1].join()
         threads[0].join()
-        return "Stopped 3D reconstruction..."
+        return "Stopped StructureFromMotion module..."
     else:
-        return "No running instance of 3D reconstruction..."
+        return "No running instance of StructureFromMotion module..."
 
 
 def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
@@ -258,12 +258,9 @@ def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
     }
 
     for step in reconstruction_steps:
-        d["children"].append({step.__class__.__name__:
-
-                                  {s: getattr(step, s, None) for s in dir(step) if
-                                   isinstance(getattr(type(step), s, None), property)}
-
-                              })
+        b = {s: getattr(step, s, None) for s in dir(step) if isinstance(getattr(type(step), s, None), property)}
+        b["id"] = step.__class__.__name__
+        d["children"].append(b)
 
     return json.dumps(d, indent=4, sort_keys=True, default=str)
 
