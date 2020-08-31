@@ -25,9 +25,14 @@
       "url": "http://pjf0349ts.net/outputs/test.OBJ"
     },
     {
-      "id": "test.STL",
-      "url": "http://pjf0349ts.net/outputs/test.STL"
+      "id": "test.MTL",
+      "url": "http://pjf0349ts.net/outputs/test.MTL"
+    },
+    {
+      "id": "test.PNG",
+      "url": "http://pjf0349ts.net/outputs/test.PNG"
     }
+
   ],
   "dataProvider": "iKnowHow SA",
   "startedAt": "2016-11-30T07:00:00.00Z",

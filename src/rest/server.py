@@ -3,18 +3,22 @@ import logging
 import os
 import signal
 import threading
+import glob
 import time
 from typing import List
 import simplejson as json
 import pyfiware
 from threading import Event
 from flask import Flask
+from pathlib import Path
 
 from config import ROOT_DIR
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
 from src.reconstruction.reconstruction import ThreeDReconstruction
+from src.rest import ws_client
+from src.rest.http_client import send_images, getImageNames
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
 # logging
@@ -173,36 +177,9 @@ post_updates_thread = UpdatesThread(name="post_updates_thread", shared_data=shar
 logparser_thread = LogParserThread(name="log_parsing_thread", shared_data=shared_data)
 
 
-@app.route("/start")
-def start():
-    # TODO:  JSON payload should contain downloadable links to images
-    reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
-    # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
-    post_updates_thread = UpdatesThread(name="post_updates_thread", shared_data=shared_data)
-    logparser_thread = LogParserThread(name="log_parsing_thread", shared_data=shared_data)
-    reconstruction_thread.start()
-    threads.append(reconstruction_thread)
-    logparser_thread.start()
-    threads.append(logparser_thread)
-    post_updates_thread.start()
-    threads.append(post_updates_thread)
-
-    return "Started StructureFromMotion module..."
-
-
-@app.route("/stop")
-def stop():
-    if len(threads) == 3:
-        threads[2].join()
-        threads[1].join()
-        threads[0].join()
-        return "Stopped StructureFromMotion module..."
-    else:
-        return "No running instance of StructureFromMotion module..."
-
-
-def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
-    startedAt = min([step.datetime_start for step in reconstruction_steps if step.datetime_start])
+def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
+    # startedAt = min([step.datetime_start for step in reconstruction_steps if step.datetime_start])
+    startedAt = None
 
     if all([step.status == "SUCCESS" for step in reconstruction_steps]):
         endedAt = max([step.datetime_end for step in reconstruction_steps])
@@ -212,6 +189,22 @@ def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
     percentageOverallProgress = sum([step.status == "SUCCESS" for step in reconstruction_steps]) / len(
         reconstruction_steps)
 
+    inputFiles = None
+
+    output_dir = os.path.join(reconstruction_steps[0].path_to_cache_dir, "Texturing")
+
+    if len(os.listdir(output_dir)) == 0:
+        outputFiles = None
+    else:
+        latest_output_dir = sorted(Path(output_dir).iterdir(), key=os.path.getmtime)[0]
+        path_to_obj = glob.glob(os.path.join(latest_output_dir, "*.obj"))
+        path_to_mtl = glob.glob(os.path.join(latest_output_dir, "*.mtl"))
+        path_to_png = glob.glob(os.path.join(latest_output_dir, "*.png"))
+        if len(path_to_obj) == 1 and len(path_to_mtl) == 1 and len(path_to_png) == 1:
+            outputFiles = [path_to_obj[0], path_to_mtl[0], path_to_png[0]]
+        else:
+            outputFiles = None
+
     d = {
         "id": "StructureFromMotionService-{}".format(str(startedAt)),
         "type": "Computation",
@@ -219,30 +212,8 @@ def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
             "addressLocality": "Athens",
             "addressCountry": "GR"
         },
-        "inputFiles": [
-            {
-                "id": "IMG_0001.JPG",
-                "url": "http://pjf0349ts.net/uploads/IMG_0001.JPG"
-            },
-            {
-                "id": "IMG_0002.JPG",
-                "url": "http://pjf0349ts.net/uploads/IMG_0002.JPG"
-            },
-            {
-                "id": "IMG_0003.JPG",
-                "url": "http://pjf0349ts.net/uploads/IMG_0003.JPG"
-            }
-        ],
-        "outputFiles": [
-            {
-                "id": "test.OBJ",
-                "url": "http://pjf0349ts.net/outputs/test.OBJ"
-            },
-            {
-                "id": "test.STL",
-                "url": "http://pjf0349ts.net/outputs/test.STL"
-            }
-        ],
+        "inputFiles": inputFiles,
+        "outputFiles": outputFiles,
         "dataProvider": "iKnowHow SA",
         "startedAt": startedAt,
         "endedAt": endedAt,
@@ -262,15 +233,98 @@ def convert_to_ngsi_format(reconstruction_steps: List[ReconstructionStep]):
         b["id"] = step.__class__.__name__
         d["children"].append(b)
 
-    return json.dumps(d, indent=4, sort_keys=True, default=str)
+    return d
+
+
+@app.route("/start")
+def start():
+
+    getImages()
+
+
+    reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
+    # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
+    post_updates_thread = UpdatesThread(name="post_updates_thread", shared_data=shared_data)
+    logparser_thread = LogParserThread(name="log_parsing_thread", shared_data=shared_data)
+    logparser_thread.start()
+    threads.append(logparser_thread)
+    reconstruction_thread.start()
+    threads.append(reconstruction_thread)
+    post_updates_thread.start()
+    threads.append(post_updates_thread)
+
+    return "Started StructureFromMotion module..."
+
+
+@app.route("/stop")
+def stop():
+    if len(threads) == 3:
+        threads[2].join()
+        threads[1].join()
+        threads[0].join()
+        return "Stopped StructureFromMotion module..."
+
+    else:
+        return "No running instance of StructureFromMotion module..."
+
+
+def status1(ws):
+    d = status()
+    message = {'status': d["percentageOverallProgress"]}
+    print(message)
+    ws_client.send_message(ws, json.dumps(message))
 
 
 @app.route("/status")
 def status():
-    status = convert_to_ngsi_format(shared_data.logs)
-
+    status = construct_status_json(shared_data.logs)
+    # json.dumps(d, indent=4, sort_keys=True, default=str)
     return status
 
 
+def on_message(ws, message: str):
+    d = json.loads(message)
+    if d["message"] == "start":
+        start()
+    elif d["message"] == "stop":
+        stop()
+
+
+def wrap_send_images(route: str, output_files: List[str]) -> bool:
+    try:
+        send_images(route, output_files)
+    except:
+        pass
+    else:
+        return True
+
+
+def test_main(host, endpoint):
+    wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
+    wsClient.on_message = on_message
+    wst = threading.Thread(target=wsClient.run_forever)
+    wst.daemon = True
+    wst.start()
+    # start()
+    running = True
+    is_sent_images = False
+    time.sleep(1)
+    while (running):
+        time.sleep(1)
+        status1(wsClient)
+        outputFiles = status()["outputFiles"]
+        print(status())
+        print(outputFiles)
+        if outputFiles:
+            print(outputFiles)
+            if is_sent_images:
+                pass
+            else:
+                is_sent_images = wrap_send_images("http://192.168.210.95:3000/cache_mesh", outputFiles)
+
+
 if __name__ == '__main__':
-    app.run()
+    host = "192.168.210.95"
+    endpoint = "sfm"
+    test_main(host=host, endpoint=endpoint)
+    # app.run()
