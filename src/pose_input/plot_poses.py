@@ -19,7 +19,6 @@ def extract_robot_camera_poses(real_poses):
     poses = []
     for id, rm in real_poses.items():
         rot_mat = rm[:3, :3]
-        print(rm)
         pos_vec = np.array(rm[:3, 3]).reshape(3, 1)
         poses.append(Pose(id, pos_vec, rot_mat))
     return poses
@@ -54,6 +53,7 @@ def optimal_rotation(r_reals, r_computeds, Omega):
     O[2, 3] = 0.0
     O[3, 0:3] = 0.0
     O[3, 3] = 1.0
+    print(O)
     for i, (r_real, r_computed) in enumerate(zip(r_reals, r_computeds)):
         l.append(np.linalg.norm(r_real - np.matmul(O, r_computed)))
     return np.sum(l)
@@ -102,7 +102,7 @@ def main():
     plot_func(ax, computed_poses, 'g')
 
     Omega = optimize(real_poses, computed_poses)
-
+    print(Omega)
     transformed_poses = transform_computed_poses(Omega, deepcopy(computed_poses))
 
     plot_func(ax, transformed_poses, 'b')
