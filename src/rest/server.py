@@ -78,6 +78,13 @@ def clean_up_folder(path_to_dir: str):
             os.remove(f)
 
 
+def create_folder(path_to_dir: str):
+    if os.path.isdir(path_to_dir) or os.path.isfile(path_to_dir):
+        pass
+    else:
+        os.mkdir(path_to_dir)
+
+
 class ReconstructionThread(StoppingThread):
     def run(self):
         logger.debug("Starting Meshroom reconstruction thread...")
@@ -310,6 +317,11 @@ def wrap_send_images(route: str, output_files: List[str]) -> bool:
 
 
 def test_main(host, endpoint):
+    # make sure dirs exist
+    create_folder(IMAGES_DIR)
+    create_folder(OUTPUT_DIR)
+    create_folder(CACHE_DIR)
+
     # clean up directory
     clean_up_folder(IMAGES_DIR)
     clean_up_folder(OUTPUT_DIR)
