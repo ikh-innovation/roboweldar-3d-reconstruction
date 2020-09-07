@@ -1,6 +1,7 @@
 import ctypes
 import logging
 import os
+import shutil
 import signal
 import threading
 import glob
@@ -12,7 +13,7 @@ from threading import Event
 from flask import Flask
 from pathlib import Path
 
-from config import ROOT_DIR
+from config import ROOT_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, MESHROOM_DIR
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
@@ -68,6 +69,15 @@ class StoppingThread(threading.Thread):
         threading.Thread.join(self, timeout)
 
 
+def clean_up_folder(path_to_dir: str):
+    files = glob.glob(os.path.join(path_to_dir, "*"))
+    for f in files:
+        if os.path.isdir(f):
+            shutil.rmtree(f)
+        else:
+            os.remove(f)
+
+
 class ReconstructionThread(StoppingThread):
     def run(self):
         logger.debug("Starting Meshroom reconstruction thread...")
@@ -75,15 +85,16 @@ class ReconstructionThread(StoppingThread):
         # TODO: Provide links to images as arguments and download
         #  them to the "raw" dir prior to running further code
 
-        threedreconstruction = ThreeDReconstruction(
-            path_to_meshroom_root=os.path.join(ROOT_DIR, "deps", "Meshroom-2019.2.0"),
-            path_to_images_dir=os.path.join(ROOT_DIR, "test", "input", "raw"),
-            path_to_output_dir=os.path.join(ROOT_DIR, "test", "input", "output"),
-            path_to_cache_dir=os.path.join(ROOT_DIR, "test", "input", "cache")
-        )
+        # this thread will run the 3d reconstruction using a subprocess call
+        logger.info("Running Meshroom...")
 
+        # run SfM
+        threedreconstruction = ThreeDReconstruction(
+            path_to_meshroom_root=MESHROOM_DIR,
+            path_to_images_dir=IMAGES_DIR,
+            path_to_output_dir=OUTPUT_DIR,
+            path_to_cache_dir=CACHE_DIR, )
         # If process returns exit code 0, it has completed successfully
-        logger.info("Before start!!!!!")
 
         process = threedreconstruction.start()
         logger.info("After start!!!!!")
@@ -239,8 +250,6 @@ def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
 
 @app.route("/start")
 def start():
-    getImages()
-
     reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
     # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
     post_updates_thread = UpdatesThread(name="post_updates_thread", shared_data=shared_data)
@@ -301,9 +310,15 @@ def wrap_send_images(route: str, output_files: List[str]) -> bool:
 
 
 def test_main(host, endpoint):
-    # TODO: Clean all files before module is started
+    # clean up directory
+    clean_up_folder(IMAGES_DIR)
+    clean_up_folder(OUTPUT_DIR)
+    clean_up_folder(CACHE_DIR)
 
-    getImages(host, path=os.path.join(ROOT_DIR, "test", "input", "raw"))
+    # get the images from the server
+    getImages(host, path=IMAGES_DIR)
+
+    # init client
     wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
     wsClient.on_message = on_message
     wst = threading.Thread(target=wsClient.run_forever)
@@ -324,7 +339,7 @@ def test_main(host, endpoint):
             if is_sent_images:
                 pass
             else:
-                is_sent_images = wrap_send_images("http://192.168.210.95:3000/cache_mesh", outputFiles)
+                is_sent_images = wrap_send_images("http://" + host + ":3000/cache_mesh", outputFiles)
 
 
 if __name__ == '__main__':

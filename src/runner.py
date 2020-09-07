@@ -1,3 +1,4 @@
+import glob
 import os
 import threading
 import time
@@ -6,7 +7,7 @@ from typing import List, Optional
 
 import coloredlogs
 
-from config import ROOT_DIR, LOGGING_ENABLED
+from config import ROOT_DIR, MESHROOM_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, LOGGING_ENABLED
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
@@ -41,11 +42,16 @@ def reconstruction():
     # this thread will run the 3d reconstruction using a subprocess call
     logger.info("Running Meshroom...")
 
+    # clean up directory
+    # clean_up_folder()
+
+
+    # run SfM
     threedreconstruction = ThreeDReconstruction(
-        path_to_meshroom_root=os.path.join(ROOT_DIR, "deps", "Meshroom-2019.2.0"),
-        path_to_images_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "raw"),
-        path_to_output_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "output"),
-        path_to_cache_dir=os.path.join(ROOT_DIR, "test", "box_reconstruction", "cache")
+        path_to_meshroom_root=MESHROOM_DIR,
+        path_to_images_dir=IMAGES_DIR,
+        path_to_output_dir=OUTPUT_DIR,
+        path_to_cache_dir=CACHE_DIR,
     )
     output = 1
     try:
@@ -62,8 +68,7 @@ def log_parsing(shared_data: SharedData):
     logger.info("Starting Meshroom log parsing...")
     while True:
         try:
-            shared_data.logs = batch_parse_logs(path_to_cache_dir="/home/orfeas/Documents/Code/roboweldar/" \
-                                                                  "roboweldar-3d-reconstruction/test/box_reconstruction/cache")
+            shared_data.logs = batch_parse_logs(path_to_cache_dir=CACHE_DIR)
             time.sleep(5)
         except FileNotFoundError as err:
             logger.error(msg=err)
