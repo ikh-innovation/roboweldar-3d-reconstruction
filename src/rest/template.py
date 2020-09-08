@@ -1,3 +1,5 @@
+# 'images' and 'meshFiles' folders
+#   are needed alongside this script
 # args: 
 #   localhost -> server hostname
 #   ws/http -> ws (transmit data) or
@@ -8,57 +10,69 @@
 #   python2 template.py localhost http cache_images
 #   python2 template.py localhost http cache_mesh
 
-import ws_client, http_client, json, sys, threading, time, os
+import ws_client, http_client, json, sys, threading, time
 from os import listdir
-host = "localhost"
+httpPort = "3000"
+wsPort = "3001"
 
-def connectWS(endpoint):
-  wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
+def connectWS(endpoint, host):
+  wsClient = ws_client.getClient('ws://' + host + ':' + wsPort + '/' + endpoint)
   wst = threading.Thread(target=wsClient.run_forever)
   wst.daemon = True
   wst.start()
   running = True
-  time.sleep(5)
+  time.sleep(2)
   try:
     while (running):
-      message = '{ "pcStatus": 5 }'
+      if (endpoint == 'sfm' ):
+        val = 5
+      else:
+        val = 15
+      message = json.dumps( { 'status': val } )
       ws_client.send_message(wsClient, message)
       time.sleep(1)
 
   except KeyboardInterrupt:
     running = False
 
-# endpoint either "cache_images"
-# or "cache_mesh"
-def sendDummyFiles(endpoint):
+# endpoint either 'cache_images'
+# or 'cache_mesh'
+def sendDummyFiles(endpoint, host):
   #dummy data, files with those names should exist in this dir 
-  if (endpoint == "cache_images"):
-    files = ["image1.jpg", "image2.jpg", "image3.jpg"]
-  elif (endpoint == "cache_mesh"):
+  if (endpoint == 'cache_images'):
+    filesNames = listdir('./images')
+    files = map( lambda fileName: './images/' + fileName, filesNames )
+  elif (endpoint == 'cache_mesh'):
     filesNames = listdir('./meshFiles')
     files = map( lambda fileName: './meshFiles/' + fileName, filesNames )
-  http_client.send_images("http://" + host + ":3000/" + endpoint, files)
+  http_client.send_images('http://' + host + ':' + httpPort + '/' + endpoint, files)
 
 # obj upload example (mesh)
-# e.g. sendMesh("mesh.obj")
+# e.g. sendMesh('mesh.obj')
 def sendMesh(fName):
-  http_client.uploadMesh("http://localhost:3000/cache_mesh", fName)
+  http_client.uploadMesh('http://' + host + ':' + httpPort + '/cache_mesh', fName)
 
-def getImages(host, path):
-  images = http_client.getImageNames( "http://" + host + ":3000/" + 'image_names' )
+def getImages():
+  images = http_client.getImageNames( 'http://' + host + ':' + httpPort + '/' + 'image_names' )
   for image in images:
-    url = "http://" + host + ":3000/serve_image?imageName=" + image
+    url = 'http://' + host + ':' + httPort + '/serve_image?name=' + image
     content = http_client.downloadImage(url)
-    with open( os.path.join(path, str(image)), 'wb') as f:
+    with open( str(image), 'wb') as f:
       f.write( content )
 
-if __name__ == "__main__":
+def runMe():
+  if (len(sys.argv) < 4):
+    print("wrong number of arguments")
+    return
   host = sys.argv[1]
-  if (sys.argv[2] == "ws"):
+  if (sys.argv[2] == 'ws'):
     thisModuleHeader = sys.argv[3]
-    connectWS(thisModuleHeader)
-  elif (sys.argv[2] == "http"):
+    connectWS(thisModuleHeader, host)
+  elif (sys.argv[2] == 'http'):
     thisModuleFileEndpoint = sys.argv[3]
-    sendDummyFiles(thisModuleFileEndpoint)
-    
+    sendDummyFiles(thisModuleFileEndpoint, host)
+
+if __name__ == '__main__':
+  runMe()
+
 
