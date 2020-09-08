@@ -59,8 +59,8 @@ class ReconstructionStep:
         self._datetime_start = None
         self._datetime_end = None
         self._datetime_elapsed = None
-
         self._parsed_log = self._parse_log()
+
         self._populate_attributes()
 
     def _parse_log(self) -> Dict:
@@ -106,7 +106,3 @@ class ReconstructionStep:
 
         return "{}({})".format(class_name, members)
 
-
-if __name__ == '__main__':
-    LogParser.parse("/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/test/box_reconstruction/cache",
-                    "CameraInit")

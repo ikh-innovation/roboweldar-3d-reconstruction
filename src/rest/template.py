@@ -8,7 +8,7 @@
 #   python2 template.py localhost http cache_images
 #   python2 template.py localhost http cache_mesh
 
-import ws_client, http_client, json, sys, threading, time
+import ws_client, http_client, json, sys, threading, time, os
 from os import listdir
 host = "localhost"
 

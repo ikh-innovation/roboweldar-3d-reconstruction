@@ -45,7 +45,6 @@ def reconstruction():
     # clean up directory
     # clean_up_folder()
 
-
     # run SfM
     threedreconstruction = ThreeDReconstruction(
         path_to_meshroom_root=MESHROOM_DIR,
@@ -98,17 +97,3 @@ def post_updates(shared_data: SharedData):
             break
 
     logging.debug("Exiting REST service...")
-
-
-if __name__ == '__main__':
-    shared_data = SharedData(None)
-
-    reconstruction_thread = threading.Thread(name='non-daemon', target=reconstruction)
-
-    # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
-    update_thread = threading.Thread(name='daemon', target=post_updates, args=(shared_data,))
-    logparser_thread = threading.Thread(name='daemon', target=log_parsing, args=(shared_data,))
-
-    reconstruction_thread.start()
-    logparser_thread.start()
-    update_thread.start()

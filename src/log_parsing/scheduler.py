@@ -22,12 +22,8 @@ def batch_parse_logs(path_to_cache_dir: str) -> list:
         # check if parent class is ReconstructionStep
         if _reconstruction_step_class.__bases__[0] == ReconstructionStep:
             rec_step_obj = _reconstruction_step_class(path_to_cache_dir)
+            print("Debug directory: {}".format(path_to_cache_dir))
             list_of_reconstruction_steps.append(rec_step_obj)
             if logger:
                 logger.info("Parsed reconstruction step: {}".format(rec_step_obj))
     return list_of_reconstruction_steps
-
-
-if __name__ == '__main__':
-    batch_parse_logs(path_to_cache_dir="/home/orfeas/Documents/Code/roboweldar/" \
-                                       "roboweldar-3d-reconstruction/test/box_reconstruction/cache")
