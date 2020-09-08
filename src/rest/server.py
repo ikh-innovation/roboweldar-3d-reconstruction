@@ -302,6 +302,9 @@ def status():
 def on_message(ws, message: str):
     d = json.loads(message)
     if d["message"] == "start":
+        # get the images from the server
+        getImages(host, path=IMAGES_DIR)
+
         start()
     elif d["message"] == "stop":
         stop()
@@ -326,9 +329,6 @@ def test_main(host, endpoint):
     clean_up_folder(IMAGES_DIR)
     clean_up_folder(OUTPUT_DIR)
     clean_up_folder(CACHE_DIR)
-
-    # get the images from the server
-    getImages(host, path=IMAGES_DIR)
 
     # init client
     wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
@@ -355,7 +355,7 @@ def test_main(host, endpoint):
 
 
 if __name__ == '__main__':
-    host = "192.168.210.95"
+    host = "localhost"
     endpoint = "sfm"
     test_main(host=host, endpoint=endpoint)
     # app.run()
