@@ -60,9 +60,9 @@ def extract_inferred_camera_poses(computed_poses):
     return poses
 
 
-def plot_camera_positions_matplotlib(ax, poses, color):
+def plot_camera_positions_matplotlib(ax, poses, color, marker):
     for pose in poses:
-        ax.scatter(pose.pos_vec[0], pose.pos_vec[1], pose.pos_vec[2], color=color)
+        ax.scatter(pose.pos_vec[0], pose.pos_vec[1], pose.pos_vec[2], color=color, marker=marker, alpha=0.6)
     plt.axis("auto")
 
 
@@ -258,7 +258,8 @@ def pipeline(real_poses, computed_poses):
     #     print("before scaling: {}".format(t_pose.pos_vec))
     #     print("after scaling: {}".format(dt_pose.pos_vec))
 
-    return quadruply_transformed_poses, Transformation(translation=real_centroid, rotation=Omega2, scaling=scaling2)
+    return quadruply_transformed_poses, Transformation(translation=real_centroid, rotation=Omega2,
+                                                       scaling=scaling2 * scaling)
 
 
 def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
@@ -280,24 +281,24 @@ def main():
     plot_func = plot_camera_positions_matplotlib
 
     real_poses = extract_robot_camera_poses(load_robot_poses(
-        path_to_poses_dir="/mnt/storage/roboweldar/3dphotogrammetry_test_4/raw"))
+        path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/raw"))
 
     computed_poses = extract_inferred_camera_poses(load_computed_poses(
-        path_to_cameras_sfm="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/StructureFromMotion/578f830addc4cce0c6fccaca48fd23068ffff1a3/cameras.sfm"))
+        path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/StructureFromMotion/b64967ba4da27d19d4bb573920fe598d32d57533/cameras.sfm"))
 
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
 
     mesh = o3d.io.read_triangle_mesh(
-        "/mnt/storage/roboweldar/3dphotogrammetry_test_4/MeshroomCache/Texturing/fd4a9ab4715c27598275e84d8b11a2507cf73833/texturedMesh.obj")
+        "/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj")
 
     transformed_mesh = transform_mesh(mesh, transformation)
 
     coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
     o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
 
-    plot_func(ax, real_poses, 'r')
-    plot_func(ax, computed_poses, 'g')
-    plot_func(ax, transformed_poses, 'b')
+    plot_func(ax, real_poses, color='r', marker="o")
+    plot_func(ax, computed_poses, color='g', marker="o")
+    plot_func(ax, transformed_poses, color='b', marker="*")
     plt.show()
 
 
