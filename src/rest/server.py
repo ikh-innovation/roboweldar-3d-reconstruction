@@ -19,9 +19,8 @@ from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
 from src.reconstruction.reconstruction import ThreeDReconstruction
-from src.rest import ws_client
-from src.rest.http_client import send_images, getImageNames
-from src.rest.template import getImages
+from src.rest import ws_client, http_client
+from src.rest.http_client import send_images
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
 # logging
@@ -310,12 +309,24 @@ def status():
     return status
 
 
-def on_message(ws, message: str, host: str):
+def getImages(host, httpPort, path_to_dir):
+    images = http_client.getImageNames('http://' + str(host) + ':' + str(httpPort) + '/' + 'image_names')
+    print(images)
+    for image in images:
+        url = 'http://' + str(host) + ':' + str(httpPort) + '/serve_image?name=' + str(image)
+        content = http_client.downloadImage(url)
+        path_to_image = os.path.join(path_to_dir, str(image))
+        with open(path_to_image, 'wb') as f:
+            print("Writing image: {}".format(path_to_image))
+            f.write(content)
+
+
+def on_message(ws, message: str, host: str, port: str):
     d = json.loads(message)
     if d["message"] == "start":
         # get the images from the server
         print("Downloading images from the server ({}) to {}...".format(host, IMAGES_DIR))
-        getImages(host, path=IMAGES_DIR)
+        getImages(host=host, httpPort=port, path_to_dir=IMAGES_DIR)
 
         print("Starting SfM...")
 
@@ -335,6 +346,17 @@ def wrap_send_images(route: str, output_files: List[str]) -> bool:
         return True
 
 
+def is_output_files_valid(output_files: List[str]) -> bool:
+    if output_files:
+        is_valid = (os.path.split(output_files[0])[-1] == "texturedMesh.obj") and (
+                os.path.split(output_files[1])[-1] == "texturedMesh.mtl") and (
+                           os.path.split(output_files[2])[-1] == "texture_1001.png")
+    else:
+        is_valid = False
+
+    return is_valid
+
+
 def test_main(host, endpoint):
     # make sure dirs exist
     create_folder(IMAGES_DIR)
@@ -348,7 +370,7 @@ def test_main(host, endpoint):
 
     # init client
     wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
-    wsClient.on_message = partial(on_message, host=host)
+    wsClient.on_message = partial(on_message, host=host, port=3000)
     wst = threading.Thread(target=wsClient.run_forever)
     wst.daemon = True
     wst.start()
@@ -362,15 +384,19 @@ def test_main(host, endpoint):
         outputFiles = status()["outputFiles"]
         print(status())
         print(outputFiles)
-        if outputFiles:
+        if is_output_files_valid(outputFiles):
             print(outputFiles)
             if is_sent_images:
                 pass
             else:
-                is_sent_images = wrap_send_images("http://" + host + ":3000/cache_mesh", outputFiles)
+                url = "http://" + str(host) + ":3000/cache_mesh"
+                print("Uploading 3D mesh files to {}...".format(url))
+                is_sent_images = wrap_send_images(url, outputFiles)
+                print("Uploaded 3D mesh files to {}...".format(url))
 
 
 if __name__ == '__main__':
+    # TODO: make argument parser
     host = "localhost"
     endpoint = "sfm"
     test_main(host=host, endpoint=endpoint)

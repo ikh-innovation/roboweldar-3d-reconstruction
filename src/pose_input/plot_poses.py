@@ -57,7 +57,13 @@ def extract_inferred_camera_poses(computed_poses):
     return poses
 
 
-def plot_camera_positions(ax, poses, color):
+def plot_camera_positions_matplotlib(ax, poses, color):
+    for pose in poses:
+        ax.scatter(pose.pos_vec[0], pose.pos_vec[1], pose.pos_vec[2], color=color)
+    plt.axis("auto")
+
+
+def plot_camera_positions_open3d(ax, poses, color):
     for pose in poses:
         ax.scatter(pose.pos_vec[0], pose.pos_vec[1], pose.pos_vec[2], color=color)
     plt.axis("auto")
@@ -212,16 +218,16 @@ def pipeline(real_poses, computed_poses):
     # rotate again
 
     Omega2 = optimize_rotation(centered_real_poses, doubly_transformed_poses)
-    triply_transformed_poses = transform_poses(scaling=np.identity(3), Omega=Omega2, r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
-                                        poses=deepcopy(doubly_transformed_poses))
-
+    triply_transformed_poses = transform_poses(scaling=np.identity(3), Omega=Omega2,
+                                               r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
+                                               poses=deepcopy(doubly_transformed_poses))
 
     # scale again
     scaling2 = optimize_scaling(centered_real_poses, triply_transformed_poses)
 
     quadruply_transformed_poses = transform_poses(scaling=scaling2, Omega=np.identity(3),
-                                               r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
-                                               poses=deepcopy(triply_transformed_poses))
+                                                  r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
+                                                  poses=deepcopy(triply_transformed_poses))
 
     for t_pose, dt_pose in zip(transformed_poses, doubly_transformed_poses):
         print("before scaling: {}".format(t_pose.pos_vec))
@@ -234,7 +240,7 @@ def main():
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-    plot_func = plot_camera_positions
+    plot_func = plot_camera_positions_matplotlib
 
     real_poses = extract_robot_camera_poses(load_robot_poses(
         path_to_poses_dir="/mnt/storage/shared/roboweldar/new_dataset/new_dataset_reconstruction"))
