@@ -192,13 +192,27 @@ def translate_poses(computed_poses, r_estimated):
 
 
 def check_omega(Omega: np.ndarray):
-    print(np.matmul(Omega, np.transpose(Omega)))
+    # check if determinant of matrix = 1.0 (rotation matrix should satisfy this condition)
+    return np.round(np.linalg.det(Omega), 2) == 1.0
 
 
 def center_poses(poses):
     centroid = compute_geometric_center(poses)
     centered_poses = translate_poses(poses, centroid)
     return centered_poses, centroid
+
+
+class Transformation:
+    def __init__(self, translation: np.array, rotation: np.array, scaling: np.array):
+        # order of transformation should be
+        self.translation = translation
+        self.rotation = rotation
+        self.check_rotation()
+        self.scaling = scaling
+
+    def check_rotation(self):
+        if not check_omega(self.rotation):
+            raise UserWarning("Determinant of matrix is not 1.0, not a valid rotation matrix...")
 
 
 def pipeline(real_poses, computed_poses):
@@ -226,14 +240,14 @@ def pipeline(real_poses, computed_poses):
     scaling2 = optimize_scaling(centered_real_poses, triply_transformed_poses)
 
     quadruply_transformed_poses = transform_poses(scaling=scaling2, Omega=np.identity(3),
-                                                  r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
+                                                  r=-real_centroid,
                                                   poses=deepcopy(triply_transformed_poses))
 
     for t_pose, dt_pose in zip(transformed_poses, doubly_transformed_poses):
         print("before scaling: {}".format(t_pose.pos_vec))
         print("after scaling: {}".format(dt_pose.pos_vec))
 
-    return quadruply_transformed_poses
+    return quadruply_transformed_poses, Transformation(translation=real_centroid, rotation=Omega2, scaling=scaling2)
 
 
 def main():
@@ -248,7 +262,7 @@ def main():
     computed_poses = extract_inferred_camera_poses(load_computed_poses(
         path_to_cameras_sfm="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/StructureFromMotion/578f830addc4cce0c6fccaca48fd23068ffff1a3/cameras.sfm"))
 
-    transformed_poses = pipeline(real_poses, computed_poses)
+    transformed_poses, transformation = pipeline(real_poses, computed_poses)
 
     # plot_func(ax, [Pose(None, computed_gc, None)], 'y')
     # plot_func(ax, [Pose(None, real_gc, None)], 'y')
@@ -258,7 +272,7 @@ def main():
     plot_func(ax, real_poses, 'r')
     plot_func(ax, computed_poses, 'g')
     plot_func(ax, transformed_poses, 'b')
-    plot_func(ax, center_poses(real_poses)[0], 'm')
+    # plot_func(ax, center_poses(real_poses)[0], 'm')
 
     plt.show()
 
