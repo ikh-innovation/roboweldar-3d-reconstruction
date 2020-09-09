@@ -1,7 +1,7 @@
 import copy
 from copy import deepcopy
 from functools import partial
-from typing import List
+from typing import List, Optional
 
 from scipy.optimize import minimize
 
@@ -168,13 +168,22 @@ def optimize_scaling(real_poses, computed_poses):
     return get_scaling_matrix(a, b, c)
 
 
-def transform_poses(scaling, Omega, r, poses):
-    l = []
-    for pose in poses:
-        pose.pos_vec = pose.pos_vec - r
-        pose.pos_vec = scaling @ Omega @ pose.pos_vec
+def transform_poses(poses, scaling: Optional[np.ndarray] = None,
+                    rotation: Optional[np.ndarray] = None,
+                    translation: Optional[np.ndarray] = None):
+    transformed_poses = deepcopy(poses)
 
-    transformed_poses = poses
+    if translation is not None:
+        for pose in transformed_poses:
+            pose.pos_vec = pose.pos_vec + translation
+
+    if rotation is not None:
+        for pose in transformed_poses:
+            pose.pos_vec = rotation @ pose.pos_vec
+
+    if scaling is not None:
+        for pose in transformed_poses:
+            pose.pos_vec = scaling @ pose.pos_vec
 
     return transformed_poses
 
@@ -227,39 +236,30 @@ class Transformation:
 
 
 def pipeline(real_poses, computed_poses):
-    centered_real_poses, real_centroid = center_poses(real_poses)
-    centered_computed_poses, computed_centroid = center_poses(computed_poses)
+    _, real_centroid = center_poses(real_poses)
+    _, computed_centroid = center_poses(computed_poses)
 
-    Omega = optimize_rotation(centered_real_poses, centered_computed_poses)
-    check_omega(Omega)
-    transformed_poses = transform_poses(scaling=np.identity(3), Omega=Omega, r=computed_centroid,
-                                        poses=deepcopy(computed_poses))
+    centered_real_poses = transform_poses(poses=real_poses, translation=-real_centroid)
+    poses = transform_poses(poses=computed_poses, translation=-computed_centroid)
+    print("Centroid of Centered computed poses: {}".format(center_poses(centered_real_poses)[1]))
+    print("Centroid of Centered real poses: {}".format(center_poses(poses)[1]))
 
-    scaling = optimize_scaling(centered_real_poses, transformed_poses)
+    # find optimal orientation
+    rotation = optimize_rotation(centered_real_poses, poses)
+    poses = transform_poses(poses=poses, rotation=rotation)
 
-    doubly_transformed_poses = transform_poses(scaling=scaling, Omega=Omega, r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
-                                               poses=deepcopy(transformed_poses))
+    # find optimal scaling
+    scaling = optimize_scaling(centered_real_poses, poses)
+    poses = transform_poses(poses=poses, scaling=scaling)
 
-    # rotate again
+    # translate to centroid of real camera positions
+    poses = transform_poses(poses=poses, translation=real_centroid)
 
-    Omega2 = optimize_rotation(centered_real_poses, doubly_transformed_poses)
-    triply_transformed_poses = transform_poses(scaling=np.identity(3), Omega=Omega2,
-                                               r=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
-                                               poses=deepcopy(doubly_transformed_poses))
-
-    # scale again
-    scaling2 = optimize_scaling(centered_real_poses, triply_transformed_poses)
-
-    quadruply_transformed_poses = transform_poses(scaling=scaling2, Omega=np.identity(3),
-                                                  r=-real_centroid,
-                                                  poses=deepcopy(triply_transformed_poses))
-
-    # for t_pose, dt_pose in zip(transformed_poses, doubly_transformed_poses):
+    # for t_pose, dt_pose in zip(rotated_poses, doubly_transformed_poses):
     #     print("before scaling: {}".format(t_pose.pos_vec))
     #     print("after scaling: {}".format(dt_pose.pos_vec))
 
-    return quadruply_transformed_poses, Transformation(translation=real_centroid, rotation=Omega2,
-                                                       scaling=scaling2 * scaling)
+    return poses, Transformation(translation=real_centroid, rotation=rotation, scaling=scaling)
 
 
 def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
@@ -288,13 +288,13 @@ def main():
 
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
 
-    mesh = o3d.io.read_triangle_mesh(
-        "/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj")
-
-    transformed_mesh = transform_mesh(mesh, transformation)
-
-    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
-    o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
+    # mesh = o3d.io.read_triangle_mesh(
+    #     "/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj")
+    #
+    # transformed_mesh = transform_mesh(mesh, transformation)
+    #
+    # coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
+    # o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
 
     plot_func(ax, real_poses, color='r', marker="o")
     plot_func(ax, computed_poses, color='g', marker="o")
