@@ -1,11 +1,14 @@
+import copy
 from copy import deepcopy
 from functools import partial
+from typing import List
 
 from scipy.optimize import minimize
 
 from src.pose_input.extract_poses import load_robot_poses, load_computed_poses
 import matplotlib.pyplot as plt
 import numpy as np
+import open3d as o3d
 
 
 def rotation_matrix_x(theta):
@@ -127,8 +130,8 @@ def optimize_rotation(real_poses, computed_poses):
     ordered_real_poses = order_poses_by_id(real_poses)
     ordered_computed_poses = order_poses_by_id(computed_poses)
 
-    print(compute_geometric_center(ordered_real_poses))
-    print(compute_geometric_center(ordered_computed_poses))
+    # print(compute_geometric_center(ordered_real_poses))
+    # print(compute_geometric_center(ordered_computed_poses))
 
     r_reals = [pose.pos_vec for pose in ordered_real_poses]
     r_computeds = [pose.pos_vec for pose in ordered_computed_poses]
@@ -139,7 +142,7 @@ def optimize_rotation(real_poses, computed_poses):
     beta = res2.x[1]
     gamma = res2.x[2]
     Omega = get_3d_rotation_matrix(alpha, beta, gamma)
-    print(alpha, beta, gamma)
+    # print(alpha, beta, gamma)
 
     return Omega
 
@@ -176,11 +179,19 @@ def transform_poses(scaling, Omega, r, poses):
     return transformed_poses
 
 
-def compute_geometric_center(poses):
-    xs = np.mean([pose.pos_vec[0] for pose in poses])
-    ys = np.mean([pose.pos_vec[1] for pose in poses])
-    zs = np.mean([pose.pos_vec[2] for pose in poses])
+def compute_centroid(vertices: np.ndarray):
+    xs = np.mean(vertices[:, 0])
+    ys = np.mean(vertices[:, 1])
+    zs = np.mean(vertices[:, 2])
     return np.array([xs, ys, zs]).reshape(3, 1)
+
+
+def compute_geometric_center(poses: List[Pose]):
+    vertices = np.zeros([len(poses), 3])
+    for index, pose in enumerate(poses):
+        vertices[index, :] = np.transpose(pose.pos_vec)
+    centroid = compute_centroid(vertices)
+    return centroid
 
 
 def translate_poses(computed_poses, r_estimated):
@@ -243,11 +254,23 @@ def pipeline(real_poses, computed_poses):
                                                   r=-real_centroid,
                                                   poses=deepcopy(triply_transformed_poses))
 
-    for t_pose, dt_pose in zip(transformed_poses, doubly_transformed_poses):
-        print("before scaling: {}".format(t_pose.pos_vec))
-        print("after scaling: {}".format(dt_pose.pos_vec))
+    # for t_pose, dt_pose in zip(transformed_poses, doubly_transformed_poses):
+    #     print("before scaling: {}".format(t_pose.pos_vec))
+    #     print("after scaling: {}".format(dt_pose.pos_vec))
 
     return quadruply_transformed_poses, Transformation(translation=real_centroid, rotation=Omega2, scaling=scaling2)
+
+
+def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
+                   transformation: Transformation) -> o3d.open3d_pybind.geometry.TriangleMesh:
+    mesh_centroid = compute_centroid(np.asarray(mesh.vertices))
+    mesh_centered = copy.deepcopy(mesh).translate(mesh_centroid)
+    mesh_rotated = mesh_centered.rotate(transformation.rotation, center=(0, 0, 0))
+    mesh_scaled = mesh_rotated.scale(np.mean(np.diag(transformation.scaling)), center=mesh_rotated.get_center())
+    print(transformation.scaling)
+    mesh_translated = copy.deepcopy(mesh_scaled).translate(transformation.translation)
+
+    return mesh_translated
 
 
 def main():
@@ -257,23 +280,24 @@ def main():
     plot_func = plot_camera_positions_matplotlib
 
     real_poses = extract_robot_camera_poses(load_robot_poses(
-        path_to_poses_dir="/mnt/storage/shared/roboweldar/new_dataset/new_dataset_reconstruction"))
+        path_to_poses_dir="/mnt/storage/roboweldar/3dphotogrammetry_test_4/raw"))
 
     computed_poses = extract_inferred_camera_poses(load_computed_poses(
         path_to_cameras_sfm="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/StructureFromMotion/578f830addc4cce0c6fccaca48fd23068ffff1a3/cameras.sfm"))
 
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
 
-    # plot_func(ax, [Pose(None, computed_gc, None)], 'y')
-    # plot_func(ax, [Pose(None, real_gc, None)], 'y')
-    # plot_func(ax, translate_poses(computed_poses, computed_gc), 'g')
-    # plot_func(ax, translate_poses(real_poses, real_gc), 'r')
+    mesh = o3d.io.read_triangle_mesh(
+        "/mnt/storage/roboweldar/3dphotogrammetry_test_4/MeshroomCache/Texturing/fd4a9ab4715c27598275e84d8b11a2507cf73833/texturedMesh.obj")
+
+    transformed_mesh = transform_mesh(mesh, transformation)
+
+    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
+    o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
 
     plot_func(ax, real_poses, 'r')
     plot_func(ax, computed_poses, 'g')
     plot_func(ax, transformed_poses, 'b')
-    # plot_func(ax, center_poses(real_poses)[0], 'm')
-
     plt.show()
 
 
