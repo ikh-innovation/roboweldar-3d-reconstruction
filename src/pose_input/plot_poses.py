@@ -258,13 +258,18 @@ def pipeline(real_poses, computed_poses):
     # for t_pose, dt_pose in zip(rotated_poses, doubly_transformed_poses):
     #     print("before scaling: {}".format(t_pose.pos_vec))
     #     print("after scaling: {}".format(dt_pose.pos_vec))
+    # TODO: add some sanity checks
 
     return poses, Transformation(translation=real_centroid, rotation=rotation, scaling=scaling)
 
 
 def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
                    transformation: Transformation) -> o3d.open3d_pybind.geometry.TriangleMesh:
+
+
+
     mesh_centroid = compute_centroid(np.asarray(mesh.vertices))
+    # print("Center: {}".format(mesh_centered.get_center()))
     mesh_centered = copy.deepcopy(mesh).translate(mesh_centroid)
     mesh_rotated = mesh_centered.rotate(transformation.rotation, center=(0, 0, 0))
     mesh_scaled = mesh_rotated.scale(np.mean(np.diag(transformation.scaling)), center=mesh_rotated.get_center())
@@ -288,13 +293,13 @@ def main():
 
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
 
-    # mesh = o3d.io.read_triangle_mesh(
-    #     "/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj")
-    #
-    # transformed_mesh = transform_mesh(mesh, transformation)
-    #
-    # coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
-    # o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
+    mesh = o3d.io.read_triangle_mesh(
+        "/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj")
+
+    transformed_mesh = transform_mesh(mesh, transformation)
+
+    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
+    o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
 
     plot_func(ax, real_poses, color='r', marker="o")
     plot_func(ax, computed_poses, color='g', marker="o")
