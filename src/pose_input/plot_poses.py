@@ -1,7 +1,7 @@
 import copy
 from copy import deepcopy
 from functools import partial
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from scipy.optimize import minimize
 
@@ -265,18 +265,35 @@ def pipeline(real_poses, computed_poses):
 
 def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
                    transformation: Transformation) -> o3d.open3d_pybind.geometry.TriangleMesh:
-
-
-
     mesh_centroid = compute_centroid(np.asarray(mesh.vertices))
     # print("Center: {}".format(mesh_centered.get_center()))
     mesh_centered = copy.deepcopy(mesh).translate(mesh_centroid)
     mesh_rotated = mesh_centered.rotate(transformation.rotation, center=(0, 0, 0))
     mesh_scaled = mesh_rotated.scale(np.mean(np.diag(transformation.scaling)), center=mesh_rotated.get_center())
     print(transformation.scaling)
-    mesh_translated = copy.deepcopy(mesh_scaled).translate(transformation.translation)
+    mesh_translated = copy.deepcopy(mesh_scaled).translate(-transformation.translation)
 
     return mesh_translated
+
+
+def convert_poses_to_open3d(poses: List[Pose]):
+    points = []
+    for pose in poses:
+        points.append(pose.pos_vec.transpose().tolist()[0])
+
+    return o3d.utility.Vector3dVector(points)
+
+
+def convert_poses_to_o3d_point_cloud(poses: List[Pose],
+                                     color: Optional[Tuple[int, int, int]]) -> o3d.geometry.PointCloud:
+    real_points = convert_poses_to_open3d(poses)
+    point_cloud = o3d.geometry.PointCloud(
+        points=real_points,
+    )
+
+    point_cloud.colors = o3d.utility.Vector3dVector([color for i in range(len(real_points))])
+
+    return point_cloud
 
 
 def main():
@@ -299,12 +316,25 @@ def main():
     transformed_mesh = transform_mesh(mesh, transformation)
 
     coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
-    o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh])
 
-    plot_func(ax, real_poses, color='r', marker="o")
-    plot_func(ax, computed_poses, color='g', marker="o")
-    plot_func(ax, transformed_poses, color='b', marker="*")
-    plt.show()
+    real_points = convert_poses_to_open3d(real_poses)
+    real_cameras_pcl = o3d.geometry.PointCloud(
+        points=real_points,
+    )
+    real_cameras_pcl.colors = o3d.utility.Vector3dVector([[1, 0, 0] for i in range(len(real_points))])
+
+    real_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=computed_poses, color=(1, 0, 0))
+    computed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=computed_poses, color=(0, 1, 0))
+    transformed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=transformed_poses, color=(0, 0, 1))
+
+    o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh, real_cameras_pcl, computed_cameras_pcl, transformed_cameras_pcl])
+    # o3d.visualization.draw_geometries([coord_frame, real_cameras_pcl])
+
+    if 0:
+        plot_func(ax, real_poses, color='r', marker="o")
+        plot_func(ax, computed_poses, color='g', marker="o")
+        plot_func(ax, transformed_poses, color='b', marker="*")
+        plt.show()
 
 
 if __name__ == '__main__':
