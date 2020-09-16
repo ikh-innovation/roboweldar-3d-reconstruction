@@ -20,8 +20,11 @@ from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
 from src.postprocessing.transform_poses import transform_model_to_world_coordinates
 from src.reconstruction.reconstruction import ThreeDReconstruction
+
+# TODO: import the following from roboweldar-networking
 from src.rest import ws_client, http_client
 from src.rest.http_client import send_images
+
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
 # logging
