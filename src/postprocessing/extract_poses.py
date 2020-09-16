@@ -30,6 +30,8 @@ def load_computed_poses(path_to_cameras_sfm: str) -> Dict:
         except KeyError as err:
             print("Could not find poseId: {}".format(err))
 
+    print("Loaded a total of {} computed camera poses...".format(len(views)))
+
     return d
 
 
@@ -38,6 +40,7 @@ def load_robot_poses(path_to_poses_dir: str) -> Dict:
     rot_mats = {}
     for path_to_file in files:
         rot_mats.update({extract_filename(path_to_file): np.load(path_to_file)})
+    print("Loaded a total of {} .npy files...".format(len(files)))
     return rot_mats
 
 
