@@ -306,7 +306,7 @@ def convert_poses_to_o3d_point_cloud(poses: List[Pose],
     return point_cloud
 
 
-def main(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh: str,
+def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh: str,
          path_to_transformed_mesh_dir: str, show_plot=False):
     # optimization and transformation
     real_poses = extract_robot_camera_poses(load_robot_poses(
@@ -342,9 +342,8 @@ def main(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh
 
 
 if __name__ == '__main__':
-    main(path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/raw",
+    transform_model_to_world_coordinates(path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/raw",
          path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/StructureFromMotion/b64967ba4da27d19d4bb573920fe598d32d57533/cameras.sfm",
          path_to_computed_mesh="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj",
          path_to_transformed_mesh_dir="/mnt/storage/roboweldar/transformed_mesh")
 
-    main()
