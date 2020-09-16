@@ -1,11 +1,12 @@
 import copy
+import os
 from copy import deepcopy
 from functools import partial
 from typing import List, Optional, Tuple
 
 from scipy.optimize import minimize
 
-from src.pose_input.extract_poses import load_robot_poses, load_computed_poses
+from src.postprocessing.extract_poses import load_robot_poses, load_computed_poses
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
@@ -223,7 +224,8 @@ def center_poses(poses):
 
 
 class Transformation:
-    def __init__(self, translation: np.array, rotation: np.array, scaling: np.array, computed_cameras_centroid: np.array):
+    def __init__(self, translation: np.array, rotation: np.array, scaling: np.array,
+                 computed_cameras_centroid: np.array):
         # order of transformation should be
         self.translation = translation
         self.rotation = rotation
@@ -262,12 +264,12 @@ def pipeline(real_poses, computed_poses):
     #     print("after scaling: {}".format(dt_pose.pos_vec))
     # TODO: add some sanity checks
 
-    return poses, Transformation(translation=real_centroid, rotation=rotation, scaling=scaling, computed_cameras_centroid=computed_centroid)
+    return poses, Transformation(translation=real_centroid, rotation=rotation, scaling=scaling,
+                                 computed_cameras_centroid=computed_centroid)
 
 
 def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
                    transformation: Transformation) -> o3d.open3d_pybind.geometry.TriangleMesh:
-    
     # bring model to centroid of computed cameras array
     mesh_centered = copy.deepcopy(mesh).translate(-transformation.computed_cameras_centroid)
 
@@ -304,42 +306,35 @@ def convert_poses_to_o3d_point_cloud(poses: List[Pose],
     return point_cloud
 
 
-def main():
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-
-    plot_func = plot_camera_positions_matplotlib
-
+def main(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh: str,
+         path_to_transformed_mesh_dir: str, show_plot=False):
+    # optimization and transformation
     real_poses = extract_robot_camera_poses(load_robot_poses(
-        path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/raw"))
+        path_to_poses_dir))
 
     computed_poses = extract_inferred_camera_poses(load_computed_poses(
-        path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/StructureFromMotion/b64967ba4da27d19d4bb573920fe598d32d57533/cameras.sfm"))
-
+        path_to_cameras_sfm))
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
-
-    mesh = o3d.io.read_triangle_mesh(
-        "/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj")
-
+    mesh = o3d.io.read_triangle_mesh(path_to_computed_mesh)
     transformed_mesh = transform_mesh(mesh, transformation)
+    o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"), mesh)
 
-    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
+    if show_plot:
+        # open3d plots
+        coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
+        real_points = convert_poses_to_open3d(real_poses)
+        real_cameras_pcl = o3d.geometry.PointCloud(points=real_points, )
+        real_cameras_pcl.colors = o3d.utility.Vector3dVector([[1, 0, 0] for i in range(len(real_points))])
+        real_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=real_poses, color=(1, 0, 0))
+        computed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=computed_poses, color=(0, 1, 0))
+        transformed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=transformed_poses, color=(0, 0, 1))
+        o3d.visualization.draw_geometries(
+            [coord_frame, mesh, transformed_mesh, real_cameras_pcl, computed_cameras_pcl, transformed_cameras_pcl])
 
-    real_points = convert_poses_to_open3d(real_poses)
-    real_cameras_pcl = o3d.geometry.PointCloud(
-        points=real_points,
-    )
-    real_cameras_pcl.colors = o3d.utility.Vector3dVector([[1, 0, 0] for i in range(len(real_points))])
-
-    real_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=real_poses, color=(1, 0, 0))
-    computed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=computed_poses, color=(0, 1, 0))
-    transformed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=transformed_poses, color=(0, 0, 1))
-
-    o3d.visualization.draw_geometries(
-        [mesh, transformed_mesh, real_cameras_pcl, computed_cameras_pcl, transformed_cameras_pcl])
-    # o3d.visualization.draw_geometries([coord_frame, real_cameras_pcl])
-
-    if 0:
+        # matplotlib plots
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        plot_func = plot_camera_positions_matplotlib
         plot_func(ax, real_poses, color='r', marker="o")
         plot_func(ax, computed_poses, color='g', marker="o")
         plot_func(ax, transformed_poses, color='b', marker="*")
@@ -347,4 +342,9 @@ def main():
 
 
 if __name__ == '__main__':
+    main(path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/raw",
+         path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/StructureFromMotion/b64967ba4da27d19d4bb573920fe598d32d57533/cameras.sfm",
+         path_to_computed_mesh="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj",
+         path_to_transformed_mesh_dir="/mnt/storage/roboweldar/transformed_mesh")
+
     main()
