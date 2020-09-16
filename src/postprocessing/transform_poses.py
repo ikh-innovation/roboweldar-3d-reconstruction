@@ -278,7 +278,6 @@ def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
 
     # scale
     mesh_scaled = mesh_rotated.scale(np.mean(np.diag(transformation.scaling)), center=(0, 0, 0))
-    print(transformation.scaling)
 
     # translate back
     mesh_translated = copy.deepcopy(mesh_scaled).translate(transformation.translation)
@@ -307,17 +306,20 @@ def convert_poses_to_o3d_point_cloud(poses: List[Pose],
 
 
 def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh: str,
-         path_to_transformed_mesh_dir: str, show_plot=False):
+                                         path_to_transformed_mesh_dir: str, show_plot=False):
     # optimization and transformation
+    print("Extracting robot camera poses from provided .npy files...")
     real_poses = extract_robot_camera_poses(load_robot_poses(
         path_to_poses_dir))
-
+    print("Extracting computed camera poses from Meshroom .sfm file...")
     computed_poses = extract_inferred_camera_poses(load_computed_poses(
         path_to_cameras_sfm))
+    print("Running optimization pipeline to obtain a transformation estimate...")
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
+    print("Loading computed .obj...")
     mesh = o3d.io.read_triangle_mesh(path_to_computed_mesh)
+    print("Applying transformation to computed .obj...")
     transformed_mesh = transform_mesh(mesh, transformation)
-    o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"), mesh)
 
     if show_plot:
         # open3d plots
@@ -340,10 +342,15 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
         plot_func(ax, transformed_poses, color='b', marker="*")
         plt.show()
 
+    print("Writing output to new .obj...")
+
+    o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"), mesh)
+
 
 if __name__ == '__main__':
-    transform_model_to_world_coordinates(path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/raw",
-         path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/StructureFromMotion/b64967ba4da27d19d4bb573920fe598d32d57533/cameras.sfm",
-         path_to_computed_mesh="/mnt/storage/roboweldar/3d_photogrammetry_test_5_real/MeshroomCache/Texturing/2313595eedec8610209d2540979821dd23fb181b/texturedMesh.obj",
-         path_to_transformed_mesh_dir="/mnt/storage/roboweldar/transformed_mesh")
-
+    transform_model_to_world_coordinates(
+        path_to_poses_dir="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/src/rest/roboweldar-networking/server/uploads/images/",
+        path_to_cameras_sfm="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/reconstruction_data/cache/StructureFromMotion/4a8375d6e67bffe006cfe7936d0daa54dddd09c5/cameras.sfm",
+        path_to_computed_mesh="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/reconstruction_data/cache/Texturing/94b2d8e218fe05dec7eb02298bf114bdf457e34c/texturedMesh.obj",
+        path_to_transformed_mesh_dir="/mnt/storage/roboweldar/simulated_transformed_mesh2",
+        show_plot=True)
