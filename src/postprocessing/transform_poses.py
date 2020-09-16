@@ -254,7 +254,7 @@ def pipeline(real_poses, computed_poses):
 
     if len(real_poses) < 20:
         warnings.warn(
-            "Number of taken photos is too small, which may compromise Meshroom's ability to estimate camera "
+            "Number of taken photos is too small (less than 20), which may compromise Meshroom's ability to estimate camera "
             "positions correctly, thus compromising the estimation of the transformation matrix...")
 
     _, real_centroid = center_poses(real_poses)
@@ -362,13 +362,14 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
 
     print("Writing output to new .obj...")
 
-    o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"), mesh)
+    o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"),
+                               mesh, print_progress=True)
 
 
 if __name__ == '__main__':
     transform_model_to_world_coordinates(
-        path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_6_sim/raw",
-        path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_6_sim/MeshroomCache/StructureFromMotion/db4019f4cc038c2dbfe0fe07b763745bc6d9a880/cameras.sfm",
-        path_to_computed_mesh="/mnt/storage/roboweldar/3d_photogrammetry_test_6_sim/MeshroomCache/Texturing/df638c2b8ee11b6bc312121db550e317ff398338/texturedMesh.obj",
-        path_to_transformed_mesh_dir="/mnt/storage/roboweldar/simulated_transformed_mesh2",
-        show_plot=True)
+        path_to_poses_dir="/mnt/storage/roboweldar/simulation_test_1/new_dataset_reconstruction",
+        path_to_cameras_sfm="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/StructureFromMotion/578f830addc4cce0c6fccaca48fd23068ffff1a3/cameras.sfm",
+        path_to_computed_mesh="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/Texturing/4e42bb83b74f64fe0fbec93a87a58355fa145bd6/texturedMesh.obj",
+        path_to_transformed_mesh_dir="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/Texturing/4e42bb83b74f64fe0fbec93a87a58355fa145bd6/transformed_mesh",
+        show_plot=False)
