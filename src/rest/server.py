@@ -18,6 +18,7 @@ from config import ROOT_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, MESHROOM_DIR
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
+from src.postprocessing.transform_poses import transform_model_to_world_coordinates
 from src.reconstruction.reconstruction import ThreeDReconstruction
 from src.rest import ws_client, http_client
 from src.rest.http_client import send_images
@@ -357,7 +358,7 @@ def is_output_files_valid(output_files: List[str]) -> bool:
     return is_valid
 
 
-def test_main(host, endpoint):
+def main(host, endpoint):
     # make sure dirs exist
     create_folder(IMAGES_DIR)
     create_folder(OUTPUT_DIR)
@@ -386,9 +387,34 @@ def test_main(host, endpoint):
         print(outputFiles)
         if is_output_files_valid(outputFiles):
             print(outputFiles)
+
             if is_sent_images:
                 pass
             else:
+
+                # the folder StructureFromMotion may contain multiple subdirs if the reconstruction is run multiple times.
+                # However, by erasing the dirs prior to starting the reconstruction, we guarantee that this wildcard
+                # resolution always works
+                path_to_cameras_sfm = glob.glob(os.path.join(CACHE_DIR, "StructureFromMotion", "*", "cameras.sfm"))[0]
+                TRANSFORMED_MESH_DIR = os.path.join(os.path.split(outputFiles[0])[0], "transformed_mesh")
+                create_folder(TRANSFORMED_MESH_DIR)
+
+                # Perform trasnformation of model from arbitrary Meshroom coordinates to World coordinates
+                transform_model_to_world_coordinates(
+                    path_to_poses_dir=IMAGES_DIR,
+                    path_to_cameras_sfm=path_to_cameras_sfm,
+                    path_to_computed_mesh=outputFiles[0],
+                    path_to_transformed_mesh_dir=TRANSFORMED_MESH_DIR,
+                    show_plot=False
+                )
+
+                # change var outputFiles to point to transformed model
+                outputFiles = [
+                    os.path.join(TRANSFORMED_MESH_DIR, "transformed_mesh.obj"),
+                    os.path.join(TRANSFORMED_MESH_DIR, "transformed_mesh.mtl"),
+                    os.path.join(TRANSFORMED_MESH_DIR, "transformed_mesh_0.png"),
+                ]
+                print(outputFiles)
                 url = "http://" + str(host) + ":3000/cache_mesh"
                 print("Uploading 3D mesh files to {}...".format(url))
                 is_sent_images = wrap_send_images(url, outputFiles)
@@ -399,5 +425,5 @@ if __name__ == '__main__':
     # TODO: make argument parser
     host = "localhost"
     endpoint = "sfm"
-    test_main(host=host, endpoint=endpoint)
+    main(host=host, endpoint=endpoint)
     # app.run()
