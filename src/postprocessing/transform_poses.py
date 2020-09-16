@@ -1,5 +1,6 @@
 import copy
 import os
+import warnings
 from copy import deepcopy
 from functools import partial
 from typing import List, Optional, Tuple
@@ -49,6 +50,8 @@ def extract_robot_camera_poses(real_poses):
         rot_mat = rm[:3, :3]
         pos_vec = np.array(rm[:3, 3]).reshape(3, 1)
         poses.append(Pose(id, pos_vec, rot_mat))
+    print("Collected a total of {} robot camera poses".format(len(poses)))
+
     return poses
 
 
@@ -58,6 +61,8 @@ def extract_inferred_camera_poses(computed_poses):
         rot_mat = np.array(data["rotation"]).reshape(3, 3).astype("float")
         pos_vec = np.array(data["center"]).reshape(3, 1).astype("float")
         poses.append(Pose(id, pos_vec, rot_mat))
+
+    print("Collected a total of {} computed poses".format(len(poses)))
     return poses
 
 
@@ -130,6 +135,8 @@ def optimize_rotation(real_poses, computed_poses):
     x0_Omega = np.random.uniform(-2 * np.pi, +2 * np.pi, [1, 3])
     ordered_real_poses = order_poses_by_id(real_poses)
     ordered_computed_poses = order_poses_by_id(computed_poses)
+    print("Robot camera poses ordered by filename: {}".format([pose.id for pose in ordered_real_poses]))
+    print("Computed poses ordered by filename: {}".format([pose.id for pose in ordered_computed_poses]))
 
     # print(compute_geometric_center(ordered_real_poses))
     # print(compute_geometric_center(ordered_computed_poses))
@@ -138,7 +145,8 @@ def optimize_rotation(real_poses, computed_poses):
     r_computeds = [pose.pos_vec for pose in ordered_computed_poses]
 
     partial_func_optimal_rotation = partial(optimal_rotation, r_reals, r_computeds)
-    res2 = minimize(partial_func_optimal_rotation, x0_Omega, method='Nelder-Mead', tol=1e-12)
+    res2 = minimize(partial_func_optimal_rotation, x0_Omega, method='Nelder-Mead', tol=1e-14,
+                    options={"maxiter": 200000, "disp": True})
     alpha = res2.x[0]
     beta = res2.x[1]
     gamma = res2.x[2]
@@ -160,7 +168,8 @@ def optimize_scaling(real_poses, computed_poses):
     r_computeds = [pose.pos_vec for pose in ordered_computed_poses]
 
     partial_func_optimal_scaling = partial(optimal_scaling, r_reals, r_computeds)
-    res2 = minimize(partial_func_optimal_scaling, x0_scaling, method='Nelder-Mead', tol=1e-12)
+    res2 = minimize(partial_func_optimal_scaling, x0_scaling, method='Nelder-Mead', tol=1e-11,
+                    options={"maxiter": 200000, "disp": True})
     a = res2.x[0]
     b = res2.x[1]
     c = res2.x[2]
@@ -239,6 +248,15 @@ class Transformation:
 
 
 def pipeline(real_poses, computed_poses):
+    if len(real_poses) != len(computed_poses):
+        warnings.warn(
+            "Number of computed camera poses is not equal to actual camera poses. Optimization may not converge...")
+
+    if len(real_poses) < 20:
+        warnings.warn(
+            "Number of taken photos is too small, which may compromise Meshroom's ability to estimate camera "
+            "positions correctly, thus compromising the estimation of the transformation matrix...")
+
     _, real_centroid = center_poses(real_poses)
     _, computed_centroid = center_poses(computed_poses)
 
@@ -349,8 +367,8 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
 
 if __name__ == '__main__':
     transform_model_to_world_coordinates(
-        path_to_poses_dir="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/src/rest/roboweldar-networking/server/uploads/images/",
-        path_to_cameras_sfm="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/reconstruction_data/cache/StructureFromMotion/4a8375d6e67bffe006cfe7936d0daa54dddd09c5/cameras.sfm",
-        path_to_computed_mesh="/home/orfeas/Documents/Code/roboweldar/roboweldar-3d-reconstruction/reconstruction_data/cache/Texturing/94b2d8e218fe05dec7eb02298bf114bdf457e34c/texturedMesh.obj",
+        path_to_poses_dir="/mnt/storage/roboweldar/3d_photogrammetry_test_6_sim/raw",
+        path_to_cameras_sfm="/mnt/storage/roboweldar/3d_photogrammetry_test_6_sim/MeshroomCache/StructureFromMotion/db4019f4cc038c2dbfe0fe07b763745bc6d9a880/cameras.sfm",
+        path_to_computed_mesh="/mnt/storage/roboweldar/3d_photogrammetry_test_6_sim/MeshroomCache/Texturing/df638c2b8ee11b6bc312121db550e317ff398338/texturedMesh.obj",
         path_to_transformed_mesh_dir="/mnt/storage/roboweldar/simulated_transformed_mesh2",
         show_plot=True)
