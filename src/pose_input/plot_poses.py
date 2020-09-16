@@ -223,12 +223,13 @@ def center_poses(poses):
 
 
 class Transformation:
-    def __init__(self, translation: np.array, rotation: np.array, scaling: np.array):
+    def __init__(self, translation: np.array, rotation: np.array, scaling: np.array, computed_cameras_centroid: np.array):
         # order of transformation should be
         self.translation = translation
         self.rotation = rotation
         self.check_rotation()
         self.scaling = scaling
+        self.computed_cameras_centroid = computed_cameras_centroid
 
     def check_rotation(self):
         if not check_omega(self.rotation):
@@ -239,6 +240,7 @@ def pipeline(real_poses, computed_poses):
     _, real_centroid = center_poses(real_poses)
     _, computed_centroid = center_poses(computed_poses)
 
+    # center all poses
     centered_real_poses = transform_poses(poses=real_poses, translation=-real_centroid)
     poses = transform_poses(poses=computed_poses, translation=-computed_centroid)
     print("Centroid of Centered computed poses: {}".format(center_poses(centered_real_poses)[1]))
@@ -260,18 +262,24 @@ def pipeline(real_poses, computed_poses):
     #     print("after scaling: {}".format(dt_pose.pos_vec))
     # TODO: add some sanity checks
 
-    return poses, Transformation(translation=real_centroid, rotation=rotation, scaling=scaling)
+    return poses, Transformation(translation=real_centroid, rotation=rotation, scaling=scaling, computed_cameras_centroid=computed_centroid)
 
 
 def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
                    transformation: Transformation) -> o3d.open3d_pybind.geometry.TriangleMesh:
-    mesh_centroid = compute_centroid(np.asarray(mesh.vertices))
-    # print("Center: {}".format(mesh_centered.get_center()))
-    mesh_centered = copy.deepcopy(mesh).translate(mesh_centroid)
+    
+    # bring model to centroid of computed cameras array
+    mesh_centered = copy.deepcopy(mesh).translate(-transformation.computed_cameras_centroid)
+
+    # rotate
     mesh_rotated = mesh_centered.rotate(transformation.rotation, center=(0, 0, 0))
-    mesh_scaled = mesh_rotated.scale(np.mean(np.diag(transformation.scaling)), center=mesh_rotated.get_center())
+
+    # scale
+    mesh_scaled = mesh_rotated.scale(np.mean(np.diag(transformation.scaling)), center=(0, 0, 0))
     print(transformation.scaling)
-    mesh_translated = copy.deepcopy(mesh_scaled).translate(-transformation.translation)
+
+    # translate back
+    mesh_translated = copy.deepcopy(mesh_scaled).translate(transformation.translation)
 
     return mesh_translated
 
@@ -323,11 +331,12 @@ def main():
     )
     real_cameras_pcl.colors = o3d.utility.Vector3dVector([[1, 0, 0] for i in range(len(real_points))])
 
-    real_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=computed_poses, color=(1, 0, 0))
+    real_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=real_poses, color=(1, 0, 0))
     computed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=computed_poses, color=(0, 1, 0))
     transformed_cameras_pcl = convert_poses_to_o3d_point_cloud(poses=transformed_poses, color=(0, 0, 1))
 
-    o3d.visualization.draw_geometries([coord_frame, mesh, transformed_mesh, real_cameras_pcl, computed_cameras_pcl, transformed_cameras_pcl])
+    o3d.visualization.draw_geometries(
+        [mesh, transformed_mesh, real_cameras_pcl, computed_cameras_pcl, transformed_cameras_pcl])
     # o3d.visualization.draw_geometries([coord_frame, real_cameras_pcl])
 
     if 0:
