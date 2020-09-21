@@ -324,7 +324,7 @@ def convert_poses_to_o3d_point_cloud(poses: List[Pose],
 
 
 def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh: str,
-                                         path_to_transformed_mesh_dir: str, show_plot=False):
+                                         path_to_transformed_mesh_dir: str, show_plot=False, exclude_poses=None):
     # optimization and transformation
     print("Extracting robot camera poses from provided .npy files...")
     real_poses = extract_robot_camera_poses(load_robot_poses(
@@ -332,6 +332,11 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
     print("Extracting computed camera poses from Meshroom .sfm file...")
     computed_poses = extract_inferred_camera_poses(load_computed_poses(
         path_to_cameras_sfm))
+
+    # exclude erroneously compurted poses (manual input)
+    real_poses = list(filter(lambda x: x.id not in exclude_poses, real_poses))
+    computed_poses = list(filter(lambda x: x.id not in exclude_poses, computed_poses))
+
     print("Running optimization pipeline to obtain a transformation estimate...")
     transformed_poses, transformation = pipeline(real_poses, computed_poses)
     print("Loading computed .obj...")
@@ -363,7 +368,7 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
     print("Writing output to new .obj...")
 
     o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"),
-                               mesh, print_progress=True)
+                               transformed_mesh, print_progress=True)
 
 
 if __name__ == '__main__':
@@ -372,4 +377,5 @@ if __name__ == '__main__':
         path_to_cameras_sfm="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/StructureFromMotion/578f830addc4cce0c6fccaca48fd23068ffff1a3/cameras.sfm",
         path_to_computed_mesh="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/Texturing/4e42bb83b74f64fe0fbec93a87a58355fa145bd6/texturedMesh.obj",
         path_to_transformed_mesh_dir="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/Texturing/4e42bb83b74f64fe0fbec93a87a58355fa145bd6/transformed_mesh",
-        show_plot=False)
+        show_plot=True,
+        exclude_poses=["img22", "img23"])
