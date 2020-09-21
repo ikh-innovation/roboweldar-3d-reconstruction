@@ -8,21 +8,7 @@ expressed in the world coordinate frame.
 The module can be called independently, as a standalone entity, or started 
 as a client and spoken to via websocket and http.
 
-The module can be called from different entry points:
-
-- Web client mode: 
-
-DONE:
-- Client connection with server
-- Meshroom python wrapper for calling meshroom
-- Log parser for meshroom logs
-- Transformation of meshroom model into world frame using the known 
-camera positions
-
-
-TODO:
-- Dockerization
-- TODO's in code
+The module can be called in web client mode, or as a standalone script.
 
 
 ## Getting Started
@@ -67,8 +53,6 @@ where `path_to_meshroom_root` is the path to where the Meshroom binary files are
 `path_to_images_dir` is the path to the directory containing the raw images, 
 `path_to_output_dir` is the path where the reconstructed model will be placed,
  `path_to_cache_dir` is the path where the Meshroom cache files are saved for one session.
-
-More info on usage is found in the associated [README.md](/src/README.md).
 
 
 ### Transforming the model to world coordinates
