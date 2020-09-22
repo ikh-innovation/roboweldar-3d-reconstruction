@@ -425,8 +425,11 @@ def main(host, endpoint):
 
 
 if __name__ == '__main__':
-    # TODO: make argument parser
-    host = "localhost"
-    endpoint = "sfm"
-    main(host=host, endpoint=endpoint)
-    # app.run()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', required=True,
+                        help="Host on which the server is running")
+
+    args = parser.parse_args()
+    main(host=args.host, endpoint="sfm")
