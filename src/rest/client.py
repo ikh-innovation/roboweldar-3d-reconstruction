@@ -22,8 +22,11 @@ from src.postprocessing.transform_poses import transform_model_to_world_coordina
 from src.reconstruction.reconstruction import ThreeDReconstruction
 
 # TODO: import the following from roboweldar-networking
-from src.rest import ws_client, http_client
-from src.rest.http_client import send_images
+from src.rest.roboweldar_networking.interfaces import ws_client
+from src.rest.roboweldar_networking.interfaces.http_client import send_images
+
+
+from src.rest.roboweldar_networking.interfaces.template import getImages
 
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
@@ -311,18 +314,6 @@ def status():
 
     # json.dumps(d, indent=4, sort_keys=True, default=str)
     return status
-
-
-def getImages(host, httpPort, path_to_dir):
-    images = http_client.getImageNames('http://' + str(host) + ':' + str(httpPort) + '/' + 'image_names')
-    print(images)
-    for image in images:
-        url = 'http://' + str(host) + ':' + str(httpPort) + '/serve_image?name=' + str(image)
-        content = http_client.downloadImage(url)
-        path_to_image = os.path.join(path_to_dir, str(image))
-        with open(path_to_image, 'wb') as f:
-            print("Writing image: {}".format(path_to_image))
-            f.write(content)
 
 
 def on_message(ws, message: str, host: str, port: str):
