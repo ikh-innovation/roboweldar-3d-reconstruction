@@ -325,6 +325,9 @@ def convert_poses_to_o3d_point_cloud(poses: List[Pose],
 
 def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras_sfm: str, path_to_computed_mesh: str,
                                          path_to_transformed_mesh_dir: str, show_plot=False, exclude_poses=None):
+    if not exclude_poses:
+        exclude_poses = []
+        
     # optimization and transformation
     print("Extracting robot camera poses from provided .npy files...")
     real_poses = extract_robot_camera_poses(load_robot_poses(
@@ -378,4 +381,4 @@ if __name__ == '__main__':
         path_to_computed_mesh="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/Texturing/4e42bb83b74f64fe0fbec93a87a58355fa145bd6/texturedMesh.obj",
         path_to_transformed_mesh_dir="/mnt/storage/roboweldar/simulation_test_1/MeshroomCache/Texturing/4e42bb83b74f64fe0fbec93a87a58355fa145bd6/transformed_mesh",
         show_plot=True,
-        exclude_poses=["img22", "img23"])
+        exclude_poses=None)
