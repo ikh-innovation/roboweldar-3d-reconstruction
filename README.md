@@ -31,7 +31,7 @@ run the 3D reconstruction as a service, run:
 
 - `cd roboweldar-3d-reconstruction`
 - `source .venv/bin/activate`
-- `export PYTHONPATH=$PYTHONPATH:$(pwd); python src/rest/server.py`
+- `export PYTHONPATH=$PYTHONPATH:$(pwd); python src/rest/client.py --host "localhost"`
 
 The service will open a websocket port, listening to incoming messages from
 the server, perform a 3D reconstruction of the images sent through http, 
