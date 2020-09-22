@@ -26,7 +26,7 @@ from src.rest.roboweldar_networking.interfaces import ws_client
 from src.rest.roboweldar_networking.interfaces.http_client import send_images
 
 
-from src.rest.roboweldar_networking.interfaces.template import getImages
+from src.rest.helpers import getImages
 
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
