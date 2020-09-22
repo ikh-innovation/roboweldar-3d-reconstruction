@@ -211,8 +211,8 @@ def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
     else:
         endedAt = None
 
-    percentageOverallProgress = sum([step.status == "SUCCESS" for step in reconstruction_steps]) / len(
-        reconstruction_steps)
+    percentageOverallProgress = (sum([step.status == "SUCCESS" for step in reconstruction_steps]) / len(
+        reconstruction_steps)) * 100
 
     inputFiles = None
 
