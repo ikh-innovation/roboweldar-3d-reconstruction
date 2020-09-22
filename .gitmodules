@@ -3,5 +3,5 @@
 	url = git@github.com:orphefs/meshroom.git
 	branch = master
 [submodule "src/rest/roboweldar-networking"]
-	path = src/rest/roboweldar-networking
+	path = src/rest/roboweldar_networking
 	url = git@github.com:ikh-innovation/roboweldar-networking.git
