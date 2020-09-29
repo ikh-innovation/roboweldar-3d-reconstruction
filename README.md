@@ -19,6 +19,8 @@ on how to deploy the project on a live system.
 
 Steps:
 - `cd roboweldar-3d-reconstruction`
+- `chmod a+x setup.sh`
+- `./setup.sh`
 - `python3.6 -m venv .venv`
 - `source .venv/bin/activate`
 - `pip install -r requirements.txt`
