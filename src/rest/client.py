@@ -26,7 +26,7 @@ from src.rest.roboweldar_networking.interfaces import ws_client
 from src.rest.roboweldar_networking.interfaces.http_client import send_images
 
 
-from src.rest.helpers import getImages
+from src.rest.helpers import getFiles
 
 from src.runner import SharedData, reconstruction, post_updates, log_parsing
 
@@ -321,7 +321,7 @@ def on_message(ws, message: str, host: str, port: str):
     if d["message"] == "start":
         # get the images from the server
         print("Downloading images from the server ({}) to {}...".format(host, IMAGES_DIR))
-        getImages(host=host, httpPort=port, path_to_dir=IMAGES_DIR)
+        getFiles(host=host, httpPort=port, path_to_dir=IMAGES_DIR)
 
         print("Starting SfM...")
 

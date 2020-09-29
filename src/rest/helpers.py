@@ -3,7 +3,7 @@ import os
 from src.rest.roboweldar_networking.interfaces import http_client
 
 
-def getImages(host, httpPort, path_to_dir):
+def getFiles(host, httpPort, path_to_dir):
     images = http_client.getImageNames('http://' + str(host) + ':' + str(httpPort) + '/' + 'image_names')
     print(images)
     for image in images:
