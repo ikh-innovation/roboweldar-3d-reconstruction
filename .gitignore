@@ -131,6 +131,9 @@ dmypy.json
 # other dependencies
 deps/
 test/box_reconstruction/cache/
+reconstruction_data/cache/
+reconstruction_data/output/
+reconstruction_data/raw/
 
 # PyCharm
 .idea
