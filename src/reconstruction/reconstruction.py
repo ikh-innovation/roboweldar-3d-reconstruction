@@ -74,7 +74,13 @@ class ThreeDReconstruction:
                    "--output", self.path_to_output_dir,
                    "--cache", self.path_to_cache_dir,
                    "--forceStatus"]
+
+        # TODO: add argument "--pipeline MESHROOM_FILE" to improve reconstruction
+        # https://github.com/alicevision/meshroom/issues/683
+
         # TODO: Need to check whether this command spawns other processes that need to be killed in case of exception
+
+
 
         self._process = subprocess.Popen(command,
                                          env=self._myenv,

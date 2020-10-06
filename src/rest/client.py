@@ -23,7 +23,7 @@ from src.reconstruction.reconstruction import ThreeDReconstruction
 
 # TODO: import the following from roboweldar-networking
 from src.rest.roboweldar_networking.interfaces import ws_client
-from src.rest.roboweldar_networking.interfaces.http_client import send_images
+from src.rest.roboweldar_networking.interfaces.http_client import send_files
 
 
 from src.rest.helpers import getFiles
@@ -334,7 +334,7 @@ def on_message(ws, message: str, host: str, port: str):
 
 def wrap_send_images(route: str, output_files: List[str]) -> bool:
     try:
-        send_images(route, output_files)
+        send_files(route, output_files)
     except:
         pass
     else:
