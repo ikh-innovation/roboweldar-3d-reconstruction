@@ -9,9 +9,6 @@ import time
 from functools import partial
 from typing import List
 import simplejson as json
-import pyfiware
-from threading import Event
-from flask import Flask
 from pathlib import Path
 
 from config import ROOT_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, MESHROOM_DIR
@@ -47,9 +44,6 @@ fh.setFormatter(formatter)
 # add the handlers to logger
 logger.addHandler(ch)
 logger.addHandler(fh)
-
-# Flask
-app = Flask(__name__)
 
 
 class StoppingThread(threading.Thread):
