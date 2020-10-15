@@ -15,7 +15,7 @@ from config import ROOT_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, MESHROOM_DIR
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
-from src.postprocessing.transform_poses import transform_model_to_world_coordinates
+# from src.postprocessing.transform_poses import transform_model_to_world_coordinates
 from src.reconstruction.reconstruction import ThreeDReconstruction
 
 # TODO: import the following from roboweldar-networking
@@ -388,13 +388,13 @@ def main(host, endpoint):
                 create_folder(TRANSFORMED_MESH_DIR)
 
                 # Perform trasnformation of model from arbitrary Meshroom coordinates to World coordinates
-                transform_model_to_world_coordinates(
-                    path_to_poses_dir=IMAGES_DIR,
-                    path_to_cameras_sfm=path_to_cameras_sfm,
-                    path_to_computed_mesh=outputFiles[0],
-                    path_to_transformed_mesh_dir=TRANSFORMED_MESH_DIR,
-                    show_plot=False
-                )
+                # transform_model_to_world_coordinates(
+                #     path_to_poses_dir=IMAGES_DIR,
+                #     path_to_cameras_sfm=path_to_cameras_sfm,
+                #     path_to_computed_mesh=outputFiles[0],
+                #     path_to_transformed_mesh_dir=TRANSFORMED_MESH_DIR,
+                #     show_plot=False
+                # )
 
                 # change var outputFiles to point to transformed model
                 outputFiles = [
