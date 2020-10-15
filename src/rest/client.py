@@ -258,7 +258,6 @@ def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
     return d
 
 
-@app.route("/start")
 def start():
     reconstruction_thread = ReconstructionThread(name="reconstruction_thread", shared_data=shared_data)
     # rest and log-parsing threads run infinitely and does not exit on its own, so it should be run in a daemonic thread
@@ -276,7 +275,6 @@ def start():
     return message
 
 
-@app.route("/stop")
 def stop():
     if len(threads) == 3:
         threads[2].join()
@@ -297,7 +295,6 @@ def status1(ws):
     ws_client.send_message(ws, json.dumps(message))
 
 
-@app.route("/status")
 def status():
     if shared_data.logs:
         status = construct_status_json(shared_data.logs)
