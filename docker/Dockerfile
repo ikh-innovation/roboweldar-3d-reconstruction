@@ -14,7 +14,8 @@ RUN \
 
 WORKDIR /opt/
 ENV GITHUB_SSH_REPO=git@github.com:ikh-innovation/roboweldar-3d-reconstruction.git
-RUN git clone --recurse-submodules --single-branch --branch docker_branch ${GITHUB_SSH_REPO}
+RUN git clone --recurse-submodules ${GITHUB_SSH_REPO}
+#--single-branch --branch docker_branch
 
 #MESHROOM
 ENV RBW_PATH=/opt/roboweldar-3d-reconstruction
