@@ -5,7 +5,6 @@ import time
 import logging
 from typing import List, Optional
 
-import coloredlogs
 
 from config import ROOT_DIR, MESHROOM_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, LOGGING_ENABLED
 from src.log_parsing.log_parser import ReconstructionStep

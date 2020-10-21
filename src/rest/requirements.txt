@@ -1,0 +1,5 @@
+simplejson
+colorama
+scipy
+matplotlib
+open3d
