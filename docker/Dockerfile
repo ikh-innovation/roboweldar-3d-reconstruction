@@ -25,11 +25,11 @@ RUN \
 
 WORKDIR /opt/
 ENV GITHUB_SSH_REPO=git@github.com:ikh-innovation/roboweldar-3d-reconstruction.git
-RUN git clone --single-branch --branch docker_branch ${GITHUB_SSH_REPO}
+RUN git clone --recurse-submodules --single-branch --branch docker_branch ${GITHUB_SSH_REPO}
 #RUN git clone --recurse-submodules ${GITHUB_SSH_REPO}
 #https://github.com/singularityhub/registry/wiki/Github-Machine-User
 
-COPY roboweldar_networking ./roboweldar-3d-reconstruction/src/rest/roboweldar_networking
+#COPY roboweldar_networking ./roboweldar-3d-reconstruction/src/rest/roboweldar_networking
 
 
 
@@ -46,5 +46,5 @@ EXPOSE 3001
 WORKDIR /opt/roboweldar-3d-reconstruction
 RUN export PYTHONPATH=$PYTHONPATH:$(pwd);
 
-ENTRYPOINT ["python3 src/rest/client.py --host "]
+ENTRYPOINT ["python3", "src/rest/client.py"]
 #CMD [" python src/rest/client.py --host localhost"]
