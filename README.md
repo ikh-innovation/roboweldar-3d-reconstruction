@@ -10,6 +10,8 @@ as a client and spoken to via websocket and http.
 
 The module can be called in web client mode, or as a standalone script.
 
+<img src="docs/3d_reconstruction_demo.gif" width="400" height="400" />
+
 
 ## Getting Started
 
