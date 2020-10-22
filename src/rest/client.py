@@ -1,4 +1,5 @@
 import ctypes
+import hashlib
 import logging
 import os
 import shutil
@@ -6,8 +7,13 @@ import signal
 import threading
 import glob
 import time
+from copy import deepcopy
 from functools import partial
-from typing import List
+from typing import List, Dict
+import numpy as np
+
+import pyfiware
+import requests
 import simplejson as json
 from pathlib import Path
 
@@ -19,9 +25,9 @@ from src.postprocessing.transform_poses import transform_model_to_world_coordina
 from src.reconstruction.reconstruction import ThreeDReconstruction
 
 # TODO: import the following from roboweldar-networking
+from src.rest.fiware_client import post_entity_context_update, create_entity
 from src.rest.roboweldar_networking.interfaces import ws_client
 from src.rest.roboweldar_networking.interfaces.http_client import send_files
-
 
 from src.rest.helpers import getFiles
 
@@ -176,6 +182,7 @@ class UpdatesThread(StoppingThread):
                     for step in shared_data.logs:
                         logger.info("Sending mock POST request with data: {}".format(step))
                         # TODO: Need to create a REST service that sends updates to the Context Broker
+
             # except FileNotFoundError as err:
             #     logger.error(msg=err)
             #     continue
@@ -237,8 +244,8 @@ def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
         "inputFiles": inputFiles,
         "outputFiles": outputFiles,
         "dataProvider": "iKnowHow SA",
-        "startedAt": startedAt,
-        "endedAt": endedAt,
+        "startedAt": str(startedAt),
+        "endedAt": str(endedAt),
         "percentageOverallProgress": percentageOverallProgress,
         "children": [],
         "location": {
@@ -251,7 +258,7 @@ def construct_status_json(reconstruction_steps: List[ReconstructionStep]):
     }
 
     for step in reconstruction_steps:
-        b = {s: getattr(step, s, None) for s in dir(step) if isinstance(getattr(type(step), s, None), property)}
+        b = {s: str(getattr(step, s, None)) for s in dir(step) if isinstance(getattr(type(step), s, None), property)}
         b["id"] = step.__class__.__name__
         d["children"].append(b)
 
@@ -288,22 +295,27 @@ def stop():
         return "No running instance of StructureFromMotion module..."
 
 
-def status1(ws):
-    d = status()
+def send_percentage_progress_to_server(ws):
+    d = format_status_json()
     message = {'status': d["percentageOverallProgress"]}
     print(message)
     ws_client.send_message(ws, json.dumps(message))
 
 
-def status():
+def clean_up_data_model(data: Dict) -> Dict:
+    data_modified = deepcopy(data)
+    data_modified.pop("id", None)
+    data_modified.pop("type", None)
+    return data_modified
+
+
+def format_status_json():
     if shared_data.logs:
         status = construct_status_json(shared_data.logs)
     else:
         status = {}
         status["percentageOverallProgress"] = 0.0
         status["outputFiles"] = None
-
-    # json.dumps(d, indent=4, sort_keys=True, default=str)
     return status
 
 
@@ -343,7 +355,55 @@ def is_output_files_valid(output_files: List[str]) -> bool:
     return is_valid
 
 
-def main(host, endpoint):
+def noop_fn(*args, **kwargs):
+    pass
+
+
+class FiwareConnector:
+    def __init__(self, orion_cb_host: str, orion_cb_port: str,
+                 entity_id: str,
+                 element_type: str):
+        self.oc: pyfiware.OrionConnector = []
+        self.orion_cb_host = orion_cb_host
+        self.orion_cb_port = orion_cb_port
+        self.entity_id = entity_id
+        self.element_type = element_type
+
+        # if connection to Orion doesn't work, neutralize member functions to noops
+        try:
+            self.init_connection()
+        except pyfiware.FiException as e:
+            print(e)
+            self.create_entity = noop_fn
+            self.post_entity_context_update = noop_fn
+        else:
+            pass
+
+    def init_connection(self):
+        addr = "{}:{}".format(self.orion_cb_host, self.orion_cb_port)
+        self.oc = pyfiware.OrionConnector(host=addr)
+        res = requests.get("http://" + addr + "/version")
+        if res.status_code != 200:
+            raise pyfiware.FiException
+
+    @staticmethod
+    def create_entity(*args, **kwargs):
+        create_entity(oc=kwargs["oc"],
+                      entity_id=kwargs["entity_id"],
+                      element_type=kwargs["element_type"],
+                      data=kwargs["data"],
+                      )
+
+    @staticmethod
+    def post_entity_context_update(*args, **kwargs):
+        post_entity_context_update(oc=kwargs["oc"],
+                                   entity_id=kwargs["entity_id"],
+                                   element_type=kwargs["element_type"],
+                                   data=clean_up_data_model(kwargs["data"]),
+                                   )
+
+
+def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, orion_cb_port: str):
     # make sure dirs exist
     create_folder(IMAGES_DIR)
     create_folder(OUTPUT_DIR)
@@ -354,21 +414,39 @@ def main(host, endpoint):
     clean_up_folder(OUTPUT_DIR)
     clean_up_folder(CACHE_DIR)
 
-    # init client
-    wsClient = ws_client.getClient("ws://" + host + ":3001/" + endpoint)
-    wsClient.on_message = partial(on_message, host=host, port=3000)
+    # init websocket client
+    wsClient = ws_client.getClient("ws://" + roboweldar_server_host + ":3001/" + endpoint_type)
+    wsClient.on_message = partial(on_message, host=roboweldar_server_host, port=3000)
     wst = threading.Thread(target=wsClient.run_forever)
     wst.daemon = True
     wst.start()
+
+    # init Orion Context Broker
+    fiware_connector = FiwareConnector(
+        orion_cb_host=orion_cb_host,
+        orion_cb_port=orion_cb_port,
+        entity_id="3DReconstructionService" + str(np.random.randint(1e12)),
+        element_type="ComputationService",
+    )
+    fiware_connector.create_entity(oc=fiware_connector.oc,
+                                   entity_id=fiware_connector.entity_id,
+                                   element_type=fiware_connector.element_type,
+                                   data=format_status_json(),
+                                   )
+
     # start()
     running = True
     is_sent_images = False
     time.sleep(1)
     while (running):
         time.sleep(2)
-        status1(wsClient)
-        outputFiles = status()["outputFiles"]
-        print(status())
+        send_percentage_progress_to_server(wsClient)
+        fiware_connector.post_entity_context_update(oc=fiware_connector.oc,
+                                                    entity_id=fiware_connector.entity_id,
+                                                    element_type=fiware_connector.element_type,
+                                                    data=clean_up_data_model(format_status_json()))
+        outputFiles = format_status_json()["outputFiles"]
+        print(format_status_json())
         print(outputFiles)
         if is_output_files_valid(outputFiles):
             print(outputFiles)
@@ -400,7 +478,7 @@ def main(host, endpoint):
                     os.path.join(TRANSFORMED_MESH_DIR, "transformed_mesh_0.png"),
                 ]
                 print(outputFiles)
-                url = "http://" + str(host) + ":3000/cache_mesh"
+                url = "http://" + str(roboweldar_server_host) + ":3000/cache_mesh"
                 print("Uploading 3D mesh files to {}...".format(url))
                 is_sent_images = wrap_send_images(url, outputFiles)
                 print("Uploaded 3D mesh files to {}...".format(url))
@@ -411,7 +489,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', required=True,
-                        help="Host on which the server is running")
+                        help="Host on which the roboweldar server is running")
+    parser.add_argument('--orion_cb_host', required=True,
+                        help="Host on which the Orion Context Broker is running")
+    parser.add_argument('--orion_cb_port', required=True,
+                        help="Port on which the Orion Context Broker is running")
 
     args = parser.parse_args()
-    main(host=args.host, endpoint="sfm")
+    main(roboweldar_server_host=args.host, endpoint_type="sfm", orion_cb_host=args.orion_cb_host,
+         orion_cb_port=args.orion_cb_port)
