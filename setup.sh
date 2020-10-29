@@ -7,7 +7,7 @@ apt-get install python3.6 wget
 mkdir -p deps && cd deps
 
 echo "Downloading Meshroom..."
-wget https://srv-file9.gofile.io/downloadStore/srv-store2/XTBmo5/Meshroom-2019.2.0-linux.tar.gz
+wget https://db.3dscan.io/static/Meshroom-2019.2.0-linux.tar.gz
 
 if [ $? -eq 0 ]; then
    echo "Meshroom successfully downloaded!"

@@ -1,4 +1,5 @@
 simplejson
+pyfiware
 colorama
 scipy
 matplotlib
