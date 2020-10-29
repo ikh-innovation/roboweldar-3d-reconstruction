@@ -22,8 +22,6 @@ if LOGGING_ENABLED:
 else:
     logger = NoopLogger()
 
-from config import ROOT_DIR, LOGGING_ENABLED
-
 
 class ThreeDReconstruction:
     def __init__(self, path_to_meshroom_root: str, path_to_images_dir: str, path_to_output_dir: str,
