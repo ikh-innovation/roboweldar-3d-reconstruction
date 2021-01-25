@@ -286,8 +286,8 @@ def pipeline(real_poses, computed_poses):
                                  computed_cameras_centroid=computed_centroid)
 
 
-def transform_mesh(mesh: o3d.open3d_pybind.geometry.TriangleMesh,
-                   transformation: Transformation) -> o3d.open3d_pybind.geometry.TriangleMesh:
+def transform_mesh(mesh: o3d.geometry.TriangleMesh,
+                   transformation: Transformation) -> o3d.geometry.TriangleMesh:
     # bring model to centroid of computed cameras array
     mesh_centered = copy.deepcopy(mesh).translate(-transformation.computed_cameras_centroid)
 

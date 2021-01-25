@@ -9,7 +9,7 @@ import glob
 import time
 from copy import deepcopy
 from functools import partial
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 
 import pyfiware
@@ -403,7 +403,17 @@ class FiwareConnector:
                                    )
 
 
+def is_valid_orion_instance(orion_cb_host: Optional[str], orion_cb_port: Optional[str]) -> bool:
+    pass
+    # TODO: implement orion checking via IP and port (version number)
+    return False
+
+
 def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, orion_cb_port: str):
+    is_fiware_enabled = False
+    if is_valid_orion_instance(orion_cb_host, orion_cb_port):
+        is_fiware_enabled = True
+
     # make sure dirs exist
     create_folder(IMAGES_DIR)
     create_folder(OUTPUT_DIR)
@@ -422,17 +432,18 @@ def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, or
     wst.start()
 
     # init Orion Context Broker
-    fiware_connector = FiwareConnector(
-        orion_cb_host=orion_cb_host,
-        orion_cb_port=orion_cb_port,
-        entity_id="3DReconstructionService" + str(np.random.randint(1e12)),
-        element_type="ComputationService",
-    )
-    fiware_connector.create_entity(oc=fiware_connector.oc,
-                                   entity_id=fiware_connector.entity_id,
-                                   element_type=fiware_connector.element_type,
-                                   data=format_status_json(),
-                                   )
+    if is_fiware_enabled:
+        fiware_connector = FiwareConnector(
+            orion_cb_host=orion_cb_host,
+            orion_cb_port=orion_cb_port,
+            entity_id="3DReconstructionService" + str(np.random.randint(1e12)),
+            element_type="ComputationService",
+        )
+        fiware_connector.create_entity(oc=fiware_connector.oc,
+                                       entity_id=fiware_connector.entity_id,
+                                       element_type=fiware_connector.element_type,
+                                       data=format_status_json(),
+                                       )
 
     # start()
     running = True
@@ -441,10 +452,11 @@ def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, or
     while (running):
         time.sleep(2)
         send_percentage_progress_to_server(wsClient)
-        fiware_connector.post_entity_context_update(oc=fiware_connector.oc,
-                                                    entity_id=fiware_connector.entity_id,
-                                                    element_type=fiware_connector.element_type,
-                                                    data=clean_up_data_model(format_status_json()))
+        if is_fiware_enabled:
+            fiware_connector.post_entity_context_update(oc=fiware_connector.oc,
+                                                        entity_id=fiware_connector.entity_id,
+                                                        element_type=fiware_connector.element_type,
+                                                        data=clean_up_data_model(format_status_json()))
         outputFiles = format_status_json()["outputFiles"]
         print(format_status_json())
         print(outputFiles)
@@ -490,9 +502,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', required=True,
                         help="Host on which the roboweldar server is running")
-    parser.add_argument('--orion_cb_host', required=True,
+    parser.add_argument('--orion_cb_host', required=False,
                         help="Host on which the Orion Context Broker is running")
-    parser.add_argument('--orion_cb_port', required=True,
+    parser.add_argument('--orion_cb_port', required=False,
                         help="Port on which the Orion Context Broker is running")
 
     args = parser.parse_args()

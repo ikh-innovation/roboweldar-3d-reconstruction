@@ -20,12 +20,14 @@ local machine for development and testing purposes. See deployment for notes
 on how to deploy the project on a live system.
 
 Steps:
+- `git clone --recursive git@github.com:ikh-innovation/roboweldar-3d-reconstruction.git` 
 - `cd roboweldar-3d-reconstruction`
 - `chmod a+x setup.sh`
 - `./setup.sh`
 - `python3.6 -m venv .venv`
 - `source .venv/bin/activate`
 - `pip install -r requirements.txt`
+- `pip install -r src/rest/roboweldar_networking/interfaces/requirements.txt`
 
 ### Running the client
 
