@@ -17,7 +17,7 @@ import requests
 import simplejson as json
 from pathlib import Path
 
-from config import ROOT_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, MESHROOM_DIR
+from config import ROOT_DIR, IMAGES_DIR, OUTPUT_DIR, CACHE_DIR, MESHROOM_DIR, TRANSFORMED_MESH_DIR
 from src.log_parsing.log_parser import ReconstructionStep
 from src.log_parsing.scheduler import batch_parse_logs
 from src.logging_config import ColorFormatter
@@ -409,7 +409,7 @@ def is_valid_orion_instance(orion_cb_host: Optional[str], orion_cb_port: Optiona
     return False
 
 
-def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, orion_cb_port: str):
+def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str="", orion_cb_port: str=""):
     is_fiware_enabled = False
     if is_valid_orion_instance(orion_cb_host, orion_cb_port):
         is_fiware_enabled = True
@@ -417,11 +417,13 @@ def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, or
     # make sure dirs exist
     create_folder(IMAGES_DIR)
     create_folder(OUTPUT_DIR)
+    create_folder(TRANSFORMED_MESH_DIR)
     create_folder(CACHE_DIR)
 
     # clean up directory
     clean_up_folder(IMAGES_DIR)
     clean_up_folder(OUTPUT_DIR)
+    clean_up_folder(TRANSFORMED_MESH_DIR)
     clean_up_folder(CACHE_DIR)
 
     # init websocket client
@@ -471,8 +473,6 @@ def main(roboweldar_server_host: str, endpoint_type: str, orion_cb_host: str, or
                 # However, by erasing the dirs prior to starting the reconstruction, we guarantee that this wildcard
                 # resolution always works
                 path_to_cameras_sfm = glob.glob(os.path.join(CACHE_DIR, "StructureFromMotion", "*", "cameras.sfm"))[0]
-                TRANSFORMED_MESH_DIR = os.path.join(os.path.split(outputFiles[0])[0], "transformed_mesh")
-                create_folder(TRANSFORMED_MESH_DIR)
 
                 # Perform trasnformation of model from arbitrary Meshroom coordinates to World coordinates
                 transform_model_to_world_coordinates(
