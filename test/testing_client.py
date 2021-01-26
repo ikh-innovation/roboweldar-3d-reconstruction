@@ -8,10 +8,7 @@ sys.path.append(str(Path(os.path.abspath(__file__)).parents[1]))
 # sys.path.append(os.path.join(str(Path(os.path.abspath(__file__)).parents[1]), "src"))
 # sys.path.append(os.path.join(str(Path(os.path.abspath(__file__)).parents[1]), "src","rest"))
 
-# TODO: add .npy camera poses files in order to complete transformation (use /mnt/storage/roboweldar/3d_photogrammetry_test_10_real)
-# TODO: fix import error
-# TODO: run testing pipeline
-# TODO: use pytest-order - a pytest plugin to order test execution
+# TODO: debug transformation stage (ln 103) - not working currently
 
 from src.rest.client import clean_up_folder, main
 
@@ -89,7 +86,7 @@ def test_sfm_integration():
 
     time.sleep(4)
 
-    print("Uploading files to server...")
+    print("Uploading files from test data dir to server images dir...")
 
     send_dummy_files("cache_images", "localhost")  # upload test images to server
     print("Uploaded files to server...")
