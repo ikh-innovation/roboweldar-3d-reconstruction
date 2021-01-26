@@ -246,6 +246,14 @@ class Transformation:
         if not check_omega(self.rotation):
             raise UserWarning("Determinant of matrix is not 1.0, not a valid rotation matrix...")
 
+    def serialize(self, path_to_file: str):
+        with open(path_to_file, "w") as outfile:
+            outfile.write("Translation vector:\n{}\n\n".format(str(np.round(self.translation, 4))))
+            outfile.write("Rotation matrix:\n{}\n\n".format(str(np.round(self.rotation, 4))))
+            outfile.write("Scaling matrix:\n{}\n\n".format(str(np.round(self.scaling, 4))))
+            outfile.write("Centroid of computed camera positions:\n{}\n\n".format(
+                str(np.round(self.computed_cameras_centroid, 4))))
+
 
 def pipeline(real_poses, computed_poses):
     if len(real_poses) != len(computed_poses):
@@ -327,7 +335,7 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
                                          path_to_transformed_mesh_dir: str, show_plot=False, exclude_poses=None):
     if not exclude_poses:
         exclude_poses = []
-        
+
     # optimization and transformation
     print("Extracting robot camera poses from provided .npy files...")
     real_poses = extract_robot_camera_poses(load_robot_poses(
@@ -372,6 +380,7 @@ def transform_model_to_world_coordinates(path_to_poses_dir: str, path_to_cameras
 
     o3d.io.write_triangle_mesh(os.path.join(path_to_transformed_mesh_dir, "transformed_mesh.obj"),
                                transformed_mesh, print_progress=True)
+    transformation.serialize(os.path.join(path_to_transformed_mesh_dir, "transformation_parameters.txt"))
 
 
 if __name__ == '__main__':

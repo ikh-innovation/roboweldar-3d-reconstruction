@@ -8,5 +8,6 @@ CACHE_DIR = os.path.join(ROOT_DIR, "reconstruction_data", "cache")
 TEST_DIR = os.path.join(ROOT_DIR, "test")
 SERVER_UPLOADS_DIR = os.path.join(ROOT_DIR, "src", "rest", "roboweldar_networking", "server", "uploads")
 SERVER_DIR = os.path.join(ROOT_DIR, "src", "rest", "roboweldar_networking", "server")
+TRANSFORMED_MESH_DIR = os.path.join(ROOT_DIR, "reconstruction_data", "transformed_mesh")
 
 LOGGING_ENABLED = False
