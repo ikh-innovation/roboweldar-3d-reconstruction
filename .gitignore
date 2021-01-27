@@ -139,6 +139,7 @@ test/box_reconstruction/cache/
 reconstruction_data/cache/
 reconstruction_data/output/
 reconstruction_data/raw/
+reconstruction_data/transformed_mesh/
 
 # PyCharm
 .idea
