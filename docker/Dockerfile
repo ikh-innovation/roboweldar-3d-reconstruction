@@ -29,7 +29,8 @@ RUN export LD_LIBRARY_PATH=/usr/local/cuda/lib64
 
 #SETUP
 RUN yes | pip3 install -r roboweldar-3d-reconstruction/src/rest/roboweldar_networking/interfaces/requirements.txt
-RUN yes | pip3 install -r roboweldar-3d-reconstruction/src/rest/requirements.txt
+RUN yes | pip3 install -r roboweldar-3d-reconstruction/requirements.txt
+
 
 #PORTS
 EXPOSE 3000
