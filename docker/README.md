@@ -18,10 +18,10 @@ To deploy the image, apart from Docker, the following are required:
 
 ## How to build an image
 
-The `Dockerfile` retrieves the **latest** version of the codebase direct from RoboWeldAR's GitHub Repository. It uses an [NVIDIA Docker image](https://hub.docker.com/r/nvidia/cuda/) as base, [Alicevision's Merhroom](https://alicevision.org/#meshroom) runtime version 2019.2.0. While inside the docker directory, to build the image run
+The `Dockerfile` retrieves the **latest** version of the codebase direct from RoboWeldAR's GitHub Repository. It uses an [NVIDIA Docker image](https://hub.docker.com/r/nvidia/cuda/) as base, [Alicevision's Merhroom](https://alicevision.org/#meshroom) runtime version 2019.2.0. While inside the repository root directory, to build the image, run:
 
 ```console
-docker build -t <component-name> .  
+docker build -f docker/Dockerfile -t <component-name> .  
 ```
 ## How to run the image
 
