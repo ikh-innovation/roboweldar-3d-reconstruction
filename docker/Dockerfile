@@ -1,14 +1,20 @@
 FROM nvidia/cuda:10.2-cudnn8-devel-ubuntu18.04
+
+WORKDIR /app/roboweldar-3d-reconstruction
+COPY . .
+
+RUN useradd appuser && chown -R appuser /app
+
+
+
 RUN apt-get update
 
 #REQUIREMENTS
 RUN apt-get install -y gcc wget python3-pip python3 libgl1-mesa-glx git
 
-WORKDIR /opt/roboweldar-3d-reconstruction
-COPY . .
 
 #MESHROOM
-ENV RBW_PATH=/opt/roboweldar-3d-reconstruction
+ENV RBW_PATH=/app/roboweldar-3d-reconstruction
 RUN mkdir -p ${RBW_PATH}/deps/ && cd ${RBW_PATH}/deps/ && \
     wget https://db.3dscan.io/static/Meshroom-2019.2.0-linux.tar.gz \
     && tar zxf Meshroom-2019.2.0-linux.tar.gz && rm Meshroom-2019.2.0-linux.tar.gz
@@ -29,4 +35,5 @@ EXPOSE 3001
 #EXECUTE
 ENV PYTHONPATH "${PYTHONPATH}:$(pwd)"
 
+USER appuser
 ENTRYPOINT ["python3", "src/rest/client.py"]
